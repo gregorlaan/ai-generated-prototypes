@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rule Builder — Flow Canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1A1916;
+    --bg-elev: #221F1B;
+    --surface: #2A2722;
+    --surface-2: #34302A;
+    --border: #3A362F;
+    --border-strong: #4D4840;
+    --ink: #F5F1E8;
+    --ink-2: #C4BFB2;
+    --ink-3: #8A8579;
+    --ink-4: #5C584F;
+    --accent: #E89556;
+    --accent-soft: rgba(232,149,86,0.12);
+    --trigger: #5FA0E0;
+    --trigger-soft: rgba(95,160,224,0.12);
+    --cond: #B89968;
+    --cond-soft: rgba(184,153,104,0.12);
+    --action: #6FBF95;
+    --action-soft: rgba(111,191,149,0.12);
+    --danger: #E07B6F;
+    --danger-soft: rgba(224,123,111,0.12);
+    --grid-dot: rgba(245,241,232,0.04);
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 52px;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .brand-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .breadcrumb {
+    color: var(--ink-3);
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  .breadcrumb-active {
+    color: var(--ink);
+  }
+
+  .topbar-spacer { flex: 1; }
+
+  .top-btn {
+    height: 30px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.12s;
+  }
+
+  .top-btn:hover {
+    background: var(--surface);
+    border-color: var(--ink-4);
+  }
+
+  .top-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+  }
+
+  .top-btn.primary:hover {
+    background: #f0a268;
+    border-color: #f0a268;
+  }
+
+  .top-btn svg { width: 13px; height: 13px; }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    height: calc(100vh - 52px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    padding: 18px 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section {
+    margin-bottom: 24px;
+  }
+
+  .sidebar-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .palette-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    cursor: grab;
+    transition: all 0.12s;
+    user-select: none;
+  }
+
+  .palette-item:hover {
+    background: var(--surface-2);
+    border-color: var(--border-strong);
+    transform: translateX(2px);
+  }
+
+  .palette-item:active { cursor: grabbing; }
+
+  .palette-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .palette-icon svg { width: 14px; height: 14px; }
+
+  .palette-icon.trigger { background: var(--trigger-soft); color: var(--trigger); }
+  .palette-icon.cond { background: var(--cond-soft); color: var(--cond); }
+  .palette-icon.action { background: var(--action-soft); color: var(--action); }
+
+  .palette-label {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .palette-sub {
+    font-size: 10.5px;
+    color: var(--ink-3);
+    margin-top: 1px;
+  }
+
+  /* Canvas area */
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .canvas {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1.5px);
+    background-size: 20px 20px;
+    cursor: grab;
+    overflow: hidden;
+  }
+
+  .canvas.panning { cursor: grabbing; }
+
+  .canvas-inner {
+    position: absolute;
+    transform-origin: 0 0;
+    width: 4000px;
+    height: 4000px;
+  }
+
+  /* SVG connectors */
+  .connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .connectors path {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 1.5;
+    transition: stroke 0.15s;
+  }
+
+  .connectors path.yes { stroke: var(--action); stroke-width: 1.5; }
+  .connectors path.no { stroke: var(--danger); stroke-width: 1.5; }
+  .connectors path.hover { stroke: var(--accent); stroke-width: 2; }
+
+  .connectors path.preview {
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+
+  /* Nodes */
+  .node {
+    position: absolute;
+    width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--ink);
+    cursor: move;
+    user-select: none;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+
+  .node:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+
+  .node.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft), 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .node-header {
+    padding: 8px 10px 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .node-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .node-icon svg { width: 12px; height: 12px; }
+
+  .node[data-type="trigger"] .node-icon { background: var(--trigger-soft); color: var(--trigger); }
+  .node[data-type="cond"] .node-icon { background: var(--cond-soft); color: var(--cond); }
+  .node[data-type="action"] .node-icon { background: var(--action-soft); color: var(--action); }
+
+  .node-type {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .node-menu {
+    color: var(--ink-3);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+
+  .node:hover .node-menu { opacity: 1; }
+  .node-menu:hover { color: var(--ink); }
+  .node-menu svg { width: 12px; height: 12px; display: block; }
+
+  .node-body {
+    padding: 9px 10px 10px;
+  }
+
+  .node-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+
+  .node-sub {
+    font-size: 11px;
+    color: var(--ink-3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Port handles */
+  .port {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--ink-4);
+    cursor: crosshair;
+    transition: all 0.15s;
+    z-index: 5;
+  }
+
+  .port:hover, .port.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    transform: scale(1.25);
+  }
+
+  .port-in {
+    left: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .port-out {
+    right: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* Condition node has two output ports */
+  .node[data-type="cond"] .port-out { display: none; }
+  .node[data-type="cond"] .port-yes {
+    position: absolute;
+    right: -7px;
+    top: 35%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--action);
+    cursor: crosshair;
+    z-index: 5;
+    transition: all 0.15s;
+  }
+
+  .node[data-type="cond"] .port-no {
+    position: absolute;
+    right: -7px;
+    top: 75%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--danger);
+    cursor: crosshair;
+    z-index: 5;
+    transition: all 0.15s;
+  }
+
+  .node[data-type="cond"] .port-yes:hover { background: var(--action); transform: scale(1.25); }
+  .node[data-type="cond"] .port-no:hover { background: var(--danger); transform: scale(1.25); }
+
+  .port-label {
+    position: absolute;
+    right: -34px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+
+  .port-yes-label {
+    top: 28%;
+    color: var(--action);
+  }
+
+  .port-no-label {
+    top: 68%;
+    color: var(--danger);
+  }
+
+  /* Toolbar (bottom-right) */
+  .toolbar {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    display: flex;
+    gap: 2px;
+    z-index: 5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .tool-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    color: var(--ink-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+  }
+
+  .tool-btn:hover {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .tool-btn svg { width: 14px; height: 14px; }
+
+  .tool-sep {
+    width: 1px;
+    background: var(--border);
+    margin: 4px 2px;
+  }
+
+  .zoom-display {
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+    min-width: 48px;
+    justify-content: center;
+  }
+
+  /* Mini-map */
+  .minimap {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 180px;
+    height: 120px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    z-index: 5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .minimap-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .minimap-node {
+    position: absolute;
+    border-radius: 2px;
+  }
+
+  .minimap-node.trigger { background: var(--trigger); }
+  .minimap-node.cond { background: var(--cond); }
+  .minimap-node.action { background: var(--action); }
+
+  .minimap-viewport {
+    position: absolute;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-soft);
+    pointer-events: none;
+  }
+
+  /* Inspector */
+  .inspector {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 280px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 5;
+    opacity: 0;
+    transform: translateX(20px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+  }
+
+  .inspector.open {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .inspector-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inspector-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--ink-3);
+    flex: 1;
+  }
+
+  .inspector-close {
+    background: none;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+  }
+
+  .inspector-close:hover { color: var(--ink); }
+  .inspector-close svg { width: 12px; height: 12px; }
+
+  .inspector-body {
+    padding: 14px;
+  }
+
+  .insp-field {
+    margin-bottom: 12px;
+  }
+
+  .insp-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .insp-input, .insp-select {
+    width: 100%;
+    height: 30px;
+    padding: 0 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  .insp-input:focus, .insp-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .insp-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%238A8579' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 22px;
+    cursor: pointer;
+  }
+
+  .insp-delete {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.12s;
+  }
+
+  .insp-delete:hover {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+  }
+
+  .insp-delete svg { width: 12px; height: 12px; }
+
+  /* Empty state */
+  .empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--ink-3);
+    pointer-events: none;
+  }
+
+  .empty-state h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0 0 6px;
+    color: var(--ink-2);
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    margin: 0;
+  }
+
+  /* Context hint */
+  .hint {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: var(--ink-3);
+    z-index: 5;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .hint kbd {
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 5px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    color: var(--ink-2);
+    font-size: 10px;
+  }
+
+  /* Test panel — slides in from the right */
+  .test-panel {
+    position: fixed;
+    right: 0;
+    top: 52px;
+    bottom: 0;
+    width: 360px;
+    background: var(--bg-elev);
+    border-left: 1px solid var(--border);
+    box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .test-panel.open { transform: translateX(0); }
+
+  .test-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .test-header h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .test-header-sub {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  .test-close {
+    background: none;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 4px;
+  }
+
+  .test-close:hover { color: var(--ink); background: var(--surface); }
+  .test-close svg { width: 14px; height: 14px; }
+
+  .test-body {
+    padding: 16px 18px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .test-empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--ink-3);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .test-field {
+    margin-bottom: 12px;
+  }
+
+  .test-field.hidden { display: none; }
+
+  .test-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .test-label.required::after {
+    content: '*';
+    color: var(--accent);
+    font-size: 12px;
+  }
+
+  .test-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    box-sizing: border-box;
+  }
+
+  select.test-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%238A8579' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 26px;
+    cursor: pointer;
+  }
+
+  select.test-input option {
+    background: var(--bg-elev);
+    color: var(--ink);
+  }
+
+  .test-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .test-input.required-field {
+    border-color: var(--accent);
+  }
+
+  .test-input.error-field {
+    border-color: var(--danger);
+  }
+
+  .test-error {
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: var(--danger-soft);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .test-error svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+  .test-confirm {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--cond);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .test-confirm svg { width: 14px; height: 14px; color: var(--cond); flex-shrink: 0; margin-top: 1px; }
+
+  /* Log section */
+  .test-log {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .test-log-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .log-count {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink-2);
+  }
+
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink-2);
+    border-left: 2px solid var(--ink-4);
+    display: flex;
+    gap: 6px;
+  }
+
+  .log-entry.fired {
+    border-left-color: var(--action);
+    color: var(--ink);
+  }
+
+  .log-entry.blocked {
+    border-left-color: var(--danger);
+    color: var(--ink-3);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .log-step {
+    color: var(--ink-3);
+    flex-shrink: 0;
+  }
+
+  .test-panel-highlight {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px var(--accent-soft) !important;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-dot"></span>
+    Flow
+  </div>
+  <div class="breadcrumb">Purchase order <span style="opacity:0.4;margin:0 4px;">/</span> <span class="breadcrumb-active">Vendor logic</span></div>
+  <div class="topbar-spacer"></div>
+  <button class="top-btn" id="btnViewJson">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg>
+    JSON
+  </button>
+  <button class="top-btn" id="btnRun">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l8 5-8 5V3z"/></svg>
+    Test
+  </button>
+  <button class="top-btn primary">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l3 3 7-7"/></svg>
+    Publish
+  </button>
+</div>
+
+<div class="main">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Triggers</div>
+      <div class="palette-item" draggable="true" data-add="trigger" data-subtype="change">
+        <div class="palette-icon trigger">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h4l2-4 2 8 2-4h2"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">On field change</div>
+          <div class="palette-sub">When user edits</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="trigger" data-subtype="load">
+        <div class="palette-icon trigger">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M10 4l4 4-4 4"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">On form load</div>
+          <div class="palette-sub">When opened</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Conditions</div>
+      <div class="palette-item" draggable="true" data-add="cond" data-subtype="eq">
+        <div class="palette-icon cond">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h10M3 10h10"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">If equals</div>
+          <div class="palette-sub">Field = value</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="cond" data-subtype="gt">
+        <div class="palette-icon cond">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4l6 4-6 4"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">If greater than</div>
+          <div class="palette-sub">Numeric check</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="cond" data-subtype="empty">
+        <div class="palette-icon cond">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">If is empty</div>
+          <div class="palette-sub">No value entered</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Actions</div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="require">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Make required</div>
+          <div class="palette-sub">Mark with *</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="show">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z"/><circle cx="8" cy="8" r="2"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Show field</div>
+          <div class="palette-sub">Reveal hidden</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="hide">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M5.5 5.5C4 6.5 2 8 2 8s2 4 6 4c1.2 0 2.2-.3 3-.7M7 4.2c.3-.1.7-.2 1-.2 4 0 6 4 6 4s-.6 1.2-1.8 2.3"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Hide field</div>
+          <div class="palette-sub">Conceal field</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="default">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10M3 8h7M3 11h5"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Set default</div>
+          <div class="palette-sub">Prefill value</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="error">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Show error</div>
+          <div class="palette-sub">Display message</div>
+        </div>
+      </div>
+      <div class="palette-item" draggable="true" data-add="action" data-subtype="confirm">
+        <div class="palette-icon action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5a2 2 0 012-2h6a2 2 0 012 2v4a2 2 0 01-2 2H7l-4 3v-3a2 2 0 010-4z"/></svg>
+        </div>
+        <div>
+          <div class="palette-label">Ask confirmation</div>
+          <div class="palette-sub">User must approve</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Canvas area -->
+  <div class="canvas-area">
+    <div class="hint">
+      <span>Drag from sidebar to add</span>
+      <span>Drag empty canvas to pan</span>
+      <kbd>Space</kbd><span>pan over nodes</span>
+      <kbd>Del</kbd><span>remove</span>
+    </div>
+
+    <div class="canvas" id="canvas">
+      <div class="canvas-inner" id="canvasInner">
+        <svg class="connectors" id="connectors" viewBox="0 0 4000 4000" preserveAspectRatio="none"></svg>
+        <div id="nodes"></div>
+      </div>
+    </div>
+
+    <!-- Inspector -->
+    <div class="inspector" id="inspector">
+      <div class="inspector-header">
+        <span class="inspector-title" id="inspTitle">Properties</span>
+        <button class="inspector-close" id="inspClose">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+        </button>
+      </div>
+      <div class="inspector-body" id="inspBody"></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn" id="btnZoomOut" title="Zoom out">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3M5 7h4"/></svg>
+      </button>
+      <div class="zoom-display" id="zoomDisplay">100%</div>
+      <button class="tool-btn" id="btnZoomIn" title="Zoom in">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3M5 7h4M7 5v4"/></svg>
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="btnFit" title="Fit to view">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6V3h3M10 3h3v3M13 10v3h-3M6 13H3v-3"/></svg>
+      </button>
+      <button class="tool-btn" id="btnReset" title="Reset position">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 119 3"/><path d="M3 5v3h3"/></svg>
+      </button>
+    </div>
+
+    <!-- Mini-map -->
+    <div class="minimap">
+      <div class="minimap-canvas" id="minimap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Test panel — sits on top, slides in from right -->
+<div class="test-panel" id="testPanel">
+  <div class="test-header">
+    <div>
+      <h3>Test form</h3>
+      <div class="test-header-sub">Live evaluation</div>
+    </div>
+    <button class="test-close" id="btnCloseTest">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+    </button>
+  </div>
+  <div class="test-body" id="testBody"></div>
+</div>
+
+<script>
+/* ==================== STATE ==================== */
+const state = {
+  nodes: [],
+  edges: [],
+  selectedId: null,
+  pan: { x: -800, y: -300 },
+  zoom: 0.85,
+  isPanning: false,
+  panStart: null,
+  isDragging: false,
+  dragOffset: null,
+  isConnecting: false,
+  connectFrom: null,
+  connectPort: null,
+  nextId: 1,
+};
+
+const FIELDS = ['country','state','amount','doc_type','expires_in','vendor_type','tax_id','delete_flag','email','currency'];
+
+// Known enumerated values per field. The test panel uses these to render dropdowns.
+// Values discovered in condition nodes are merged in automatically — these are extras
+// (e.g. values that should appear in the picker even when no rule references them yet).
+const FIELD_OPTIONS = {
+  vendor_type: ['external', 'internal', 'contractor', 'partner'],
+  country:     ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan'],
+  doc_type:    ['contract', 'invoice', 'purchase_order', 'receipt'],
+  currency:    ['USD', 'EUR', 'GBP', 'JPY'],
+  delete_flag: ['true', 'false'],
+};
+
+const NODE_SCHEMAS = {
+  trigger: {
+    change: { type: 'trigger', subtype: 'change', label: 'On change', title: '{field}', field: 'country' },
+    load: { type: 'trigger', subtype: 'load', label: 'On form load', title: 'Form opens', field: null }
+  },
+  cond: {
+    eq: { type: 'cond', subtype: 'eq', label: 'If equals', title: '{field} == {value}', field: 'country', value: 'USA' },
+    gt: { type: 'cond', subtype: 'gt', label: 'If greater than', title: '{field} > {value}', field: 'amount', value: '10000' },
+    empty: { type: 'cond', subtype: 'empty', label: 'If is empty', title: '{field} is empty', field: 'tax_id', value: '' }
+  },
+  action: {
+    require: { type: 'action', subtype: 'require', label: 'Require', title: 'Require {target}', target: 'state' },
+    show: { type: 'action', subtype: 'show', label: 'Show field', title: 'Show {target}', target: 'tax_id' },
+    hide: { type: 'action', subtype: 'hide', label: 'Hide field', title: 'Hide {target}', target: 'tax_id' },
+    default: { type: 'action', subtype: 'default', label: 'Set default', title: 'Default {target} = {value}', target: 'expires_in', value: '30' },
+    error: { type: 'action', subtype: 'error', label: 'Show error', title: '"{value}"', target: '', value: 'Needs approval' },
+    confirm: { type: 'action', subtype: 'confirm', label: 'Confirm', title: '"{value}"', target: '', value: 'Are you sure?' }
+  }
+};
+
+/* ==================== SEED DATA ==================== */
+function seed() {
+  state.nodes = [
+    { id:1, type:'trigger', subtype:'change', x:900, y:500, field:'vendor_type' },
+    { id:2, type:'cond', subtype:'eq', x:1180, y:500, field:'vendor_type', value:'external' },
+    { id:3, type:'action', subtype:'show', x:1460, y:420, target:'tax_id' },
+    { id:4, type:'action', subtype:'require', x:1460, y:550, target:'tax_id' },
+    { id:5, type:'action', subtype:'hide', x:1460, y:680, target:'tax_id' },
+    { id:6, type:'trigger', subtype:'change', x:900, y:850, field:'amount' },
+    { id:7, type:'cond', subtype:'gt', x:1180, y:850, field:'amount', value:'10000' },
+    { id:8, type:'action', subtype:'error', x:1460, y:850, value:'Needs manager approval' },
+    { id:9, type:'trigger', subtype:'load', x:900, y:1050 },
+    { id:10, type:'cond', subtype:'eq', x:1180, y:1050, field:'doc_type', value:'contract' },
+    { id:11, type:'action', subtype:'default', x:1460, y:1050, target:'expires_in', value:'30' },
+  ];
+  state.edges = [
+    { from:1, to:2, fromPort:'out' },
+    { from:2, to:3, fromPort:'yes' },
+    { from:2, to:4, fromPort:'yes' },
+    { from:2, to:5, fromPort:'no' },
+    { from:6, to:7, fromPort:'out' },
+    { from:7, to:8, fromPort:'yes' },
+    { from:9, to:10, fromPort:'out' },
+    { from:10, to:11, fromPort:'yes' },
+  ];
+  state.nextId = 12;
+}
+seed();
+
+/* ==================== RENDER ==================== */
+const canvas = document.getElementById('canvas');
+const canvasInner = document.getElementById('canvasInner');
+const nodesEl = document.getElementById('nodes');
+const connectorsEl = document.getElementById('connectors');
+
+function applyTransform() {
+  canvasInner.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px) scale(${state.zoom})`;
+  document.getElementById('zoomDisplay').textContent = Math.round(state.zoom * 100) + '%';
+  renderMinimap();
+}
+
+function formatTitle(node) {
+  const s = NODE_SCHEMAS[node.type][node.subtype];
+  let title = s.title;
+  title = title.replace('{field}', node.field || '');
+  title = title.replace('{target}', node.target || '');
+  title = title.replace('{value}', node.value || '');
+  return title;
+}
+
+function getNodeIcon(type, subtype) {
+  const icons = {
+    'trigger-change': '<path d="M3 8h4l2-4 2 8 2-4h2"/>',
+    'trigger-load': '<path d="M2 8h12M10 4l4 4-4 4"/>',
+    'cond-eq': '<path d="M3 6h10M3 10h10"/>',
+    'cond-gt': '<path d="M5 4l6 4-6 4"/>',
+    'cond-empty': '<circle cx="8" cy="8" r="5"/>',
+    'action-require': '<path d="M8 2v12M2 8h12"/>',
+    'action-show': '<path d="M2 8s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z"/><circle cx="8" cy="8" r="2"/>',
+    'action-hide': '<path d="M3 3l10 10M5.5 5.5C4 6.5 2 8 2 8s2 4 6 4c1.2 0 2.2-.3 3-.7M7 4.2c.3-.1.7-.2 1-.2 4 0 6 4 6 4s-.6 1.2-1.8 2.3"/>',
+    'action-default': '<path d="M3 5h10M3 8h7M3 11h5"/>',
+    'action-error': '<circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/>',
+    'action-confirm': '<path d="M3 5a2 2 0 012-2h6a2 2 0 012 2v4a2 2 0 01-2 2H7l-4 3v-3a2 2 0 010-4z"/>',
+  };
+  return icons[`${type}-${subtype}`] || '<circle cx="8" cy="8" r="4"/>';
+}
+
+function renderNodes() {
+  nodesEl.innerHTML = '';
+  state.nodes.forEach(node => {
+    const el = document.createElement('div');
+    el.className = 'node';
+    el.dataset.type = node.type;
+    el.dataset.id = node.id;
+    el.style.left = node.x + 'px';
+    el.style.top = node.y + 'px';
+    if (state.selectedId === node.id) el.classList.add('selected');
+
+    const schema = NODE_SCHEMAS[node.type][node.subtype];
+    const subText = node.type === 'trigger'
+      ? (node.subtype === 'load' ? 'form load' : 'change → ' + (node.field || '?'))
+      : node.type === 'cond'
+        ? schema.label
+        : schema.label;
+
+    let portsHtml = node.type === 'cond'
+      ? `<div class="port port-in" data-port="in"></div>
+         <div class="port port-yes" data-port="yes"></div>
+         <span class="port-label port-yes-label">YES</span>
+         <div class="port port-no" data-port="no"></div>
+         <span class="port-label port-no-label">NO</span>`
+      : node.type === 'action'
+        ? `<div class="port port-in" data-port="in"></div>`
+        : `<div class="port port-out" data-port="out"></div>`;
+
+    el.innerHTML = `
+      <div class="node-header">
+        <div class="node-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">${getNodeIcon(node.type, node.subtype)}</svg>
+        </div>
+        <span class="node-type">${node.type}</span>
+        <span class="node-menu">
+          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg>
+        </span>
+      </div>
+      <div class="node-body">
+        <div class="node-title">${formatTitle(node)}</div>
+        <div class="node-sub">${subText}</div>
+      </div>
+      ${portsHtml}
+    `;
+    nodesEl.appendChild(el);
+  });
+}
+
+/* ==================== EDGES (curved bezier) ==================== */
+function getNodePortPos(node, port) {
+  const w = 200, h = 76; // approximate
+  if (port === 'in') return { x: node.x, y: node.y + h / 2 };
+  if (port === 'out') return { x: node.x + w, y: node.y + h / 2 };
+  if (port === 'yes') return { x: node.x + w, y: node.y + h * 0.35 };
+  if (port === 'no') return { x: node.x + w, y: node.y + h * 0.75 };
+  return { x: node.x + w, y: node.y + h / 2 };
+}
+
+function renderEdges() {
+  const paths = state.edges.map(edge => {
+    const fromNode = state.nodes.find(n => n.id === edge.from);
+    const toNode = state.nodes.find(n => n.id === edge.to);
+    if (!fromNode || !toNode) return '';
+    const from = getNodePortPos(fromNode, edge.fromPort);
+    const to = getNodePortPos(toNode, 'in');
+    const dx = (to.x - from.x) * 0.5;
+    const path = `M ${from.x} ${from.y} C ${from.x + dx} ${from.y}, ${to.x - dx} ${to.y}, ${to.x} ${to.y}`;
+    const cls = edge.fromPort === 'yes' ? 'yes' : edge.fromPort === 'no' ? 'no' : '';
+    return `<path d="${path}" class="${cls}" />`;
+  }).join('');
+
+  let preview = '';
+  if (state.isConnecting && state.connectFrom && state.previewPos) {
+    const fromNode = state.nodes.find(n => n.id === state.connectFrom);
+    const from = getNodePortPos(fromNode, state.connectPort);
+    const to = state.previewPos;
+    const dx = (to.x - from.x) * 0.5;
+    preview = `<path d="M ${from.x} ${from.y} C ${from.x + dx} ${from.y}, ${to.x - dx} ${to.y}, ${to.x} ${to.y}" class="preview" />`;
+  }
+
+  connectorsEl.innerHTML = paths + preview;
+}
+
+/* ==================== INTERACTION ==================== */
+function screenToCanvas(sx, sy) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (sx - rect.left - state.pan.x) / state.zoom,
+    y: (sy - rect.top - state.pan.y) / state.zoom
+  };
+}
+
+// Pan
+let spaceDown = false;
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !spaceDown) {
+    spaceDown = true;
+    canvas.style.cursor = 'grab';
+  }
+  if (e.code === 'Delete' || e.code === 'Backspace') {
+    if (state.selectedId && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+      deleteNode(state.selectedId);
+    }
+  }
+  if (e.code === 'Escape') {
+    state.selectedId = null;
+    closeInspector();
+    document.getElementById('testPanel').classList.remove('open');
+    renderNodes();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') {
+    spaceDown = false;
+    canvas.style.cursor = '';
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  // Treat as background click if target is the canvas, inner wrapper, the connectors SVG, or any of its child path elements
+  const isBackground =
+    e.target === canvas ||
+    e.target === canvasInner ||
+    e.target === connectorsEl ||
+    e.target.ownerSVGElement === connectorsEl ||
+    e.target.tagName === 'svg';
+
+  if (!isBackground) return;
+
+  // Left or middle button starts a pan from empty canvas. Space-held also works (handled in document listener for clicks over nodes).
+  if (e.button === 0 || e.button === 1) {
+    state.isPanning = true;
+    state.panStart = { x: e.clientX - state.pan.x, y: e.clientY - state.pan.y };
+    canvas.classList.add('panning');
+    // Also clear any selection when clicking empty canvas
+    if (state.selectedId !== null) {
+      state.selectedId = null;
+      closeInspector();
+      renderNodes();
+    }
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (state.isPanning) {
+    state.pan.x = e.clientX - state.panStart.x;
+    state.pan.y = e.clientY - state.panStart.y;
+    applyTransform();
+    return;
+  }
+
+  if (state.isDragging && state.selectedId) {
+    const pos = screenToCanvas(e.clientX, e.clientY);
+    const node = state.nodes.find(n => n.id === state.selectedId);
+    if (node) {
+      node.x = pos.x - state.dragOffset.x;
+      node.y = pos.y - state.dragOffset.y;
+      renderNodes();
+      renderEdges();
+      renderMinimap();
+    }
+    return;
+  }
+
+  if (state.isConnecting) {
+    const pos = screenToCanvas(e.clientX, e.clientY);
+    state.previewPos = pos;
+    renderEdges();
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (state.isPanning) {
+    state.isPanning = false;
+    canvas.classList.remove('panning');
+  }
+  if (state.isDragging) {
+    state.isDragging = false;
+  }
+  if (state.isConnecting) {
+    // Check if mouseup on a port
+    const portEl = e.target.closest('.port');
+    if (portEl && portEl.dataset.port === 'in') {
+      const toNodeEl = portEl.closest('.node');
+      const toId = +toNodeEl.dataset.id;
+      if (toId !== state.connectFrom) {
+        // Remove existing edge from same port if exists (for non-cond, only one out edge)
+        const fromNode = state.nodes.find(n => n.id === state.connectFrom);
+        if (fromNode.type !== 'cond') {
+          state.edges = state.edges.filter(e => !(e.from === state.connectFrom && e.fromPort === state.connectPort));
+        } else {
+          // allow multiple from yes/no but no duplicates to same target
+          state.edges = state.edges.filter(e => !(e.from === state.connectFrom && e.fromPort === state.connectPort && e.to === toId));
+        }
+        state.edges.push({ from: state.connectFrom, to: toId, fromPort: state.connectPort });
+      }
+    }
+    state.isConnecting = false;
+    state.connectFrom = null;
+    state.previewPos = null;
+    renderEdges();
+  }
+});
+
+// Node interactions
+nodesEl.addEventListener('mousedown', (e) => {
+  // Space-held: pan regardless of what's under the cursor
+  if (spaceDown) {
+    state.isPanning = true;
+    state.panStart = { x: e.clientX - state.pan.x, y: e.clientY - state.pan.y };
+    canvas.classList.add('panning');
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  const portEl = e.target.closest('.port');
+  if (portEl) {
+    const port = portEl.dataset.port;
+    if (port === 'in') return; // can't drag from input
+    const nodeEl = portEl.closest('.node');
+    state.isConnecting = true;
+    state.connectFrom = +nodeEl.dataset.id;
+    state.connectPort = port;
+    e.stopPropagation();
+    return;
+  }
+
+  const nodeEl = e.target.closest('.node');
+  if (!nodeEl) return;
+
+  if (e.target.closest('.node-menu')) {
+    deleteNode(+nodeEl.dataset.id);
+    e.stopPropagation();
+    return;
+  }
+
+  state.selectedId = +nodeEl.dataset.id;
+  state.isDragging = true;
+  const node = state.nodes.find(n => n.id === state.selectedId);
+  const pos = screenToCanvas(e.clientX, e.clientY);
+  state.dragOffset = { x: pos.x - node.x, y: pos.y - node.y };
+  renderNodes();
+  openInspector(node);
+  e.stopPropagation();
+});
+
+// Zoom with wheel
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.1 : 0.1;
+  const newZoom = Math.max(0.3, Math.min(2, state.zoom + delta));
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const scaleFactor = newZoom / state.zoom;
+  state.pan.x = cx - (cx - state.pan.x) * scaleFactor;
+  state.pan.y = cy - (cy - state.pan.y) * scaleFactor;
+  state.zoom = newZoom;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('btnZoomIn').addEventListener('click', () => {
+  state.zoom = Math.min(2, state.zoom + 0.1);
+  applyTransform();
+});
+document.getElementById('btnZoomOut').addEventListener('click', () => {
+  state.zoom = Math.max(0.3, state.zoom - 0.1);
+  applyTransform();
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  state.zoom = 1;
+  state.pan = { x: -700, y: -300 };
+  applyTransform();
+});
+document.getElementById('btnFit').addEventListener('click', () => {
+  if (state.nodes.length === 0) return;
+  const minX = Math.min(...state.nodes.map(n => n.x)) - 50;
+  const maxX = Math.max(...state.nodes.map(n => n.x + 200)) + 50;
+  const minY = Math.min(...state.nodes.map(n => n.y)) - 50;
+  const maxY = Math.max(...state.nodes.map(n => n.y + 80)) + 50;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width / (maxX - minX);
+  const scaleY = rect.height / (maxY - minY);
+  state.zoom = Math.min(scaleX, scaleY, 1);
+  state.pan.x = -minX * state.zoom + (rect.width - (maxX - minX) * state.zoom) / 2;
+  state.pan.y = -minY * state.zoom + (rect.height - (maxY - minY) * state.zoom) / 2;
+  applyTransform();
+});
+
+/* ==================== ADD FROM SIDEBAR ==================== */
+document.querySelectorAll('.palette-item').forEach(item => {
+  item.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      type: item.dataset.add,
+      subtype: item.dataset.subtype
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+});
+
+canvas.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+
+canvas.addEventListener('drop', (e) => {
+  e.preventDefault();
+  try {
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const pos = screenToCanvas(e.clientX, e.clientY);
+    const schema = NODE_SCHEMAS[data.type][data.subtype];
+    const newNode = {
+      id: state.nextId++,
+      type: data.type,
+      subtype: data.subtype,
+      x: pos.x - 100,
+      y: pos.y - 38,
+      ...(schema.field !== undefined ? { field: schema.field } : {}),
+      ...(schema.value !== undefined ? { value: schema.value } : {}),
+      ...(schema.target !== undefined ? { target: schema.target } : {}),
+    };
+    state.nodes.push(newNode);
+    state.selectedId = newNode.id;
+    renderNodes();
+    renderEdges();
+    openInspector(newNode);
+  } catch(err) {}
+});
+
+/* ==================== INSPECTOR ==================== */
+function openInspector(node) {
+  const insp = document.getElementById('inspector');
+  const body = document.getElementById('inspBody');
+  const title = document.getElementById('inspTitle');
+  const schema = NODE_SCHEMAS[node.type][node.subtype];
+  title.textContent = schema.label;
+
+  let html = '';
+  if (node.field !== undefined && node.subtype !== 'load') {
+    html += `<div class="insp-field">
+      <label class="insp-label">Field</label>
+      <select class="insp-select" data-key="field">
+        ${FIELDS.map(f => `<option value="${f}" ${node.field===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  if (node.type === 'cond' && node.subtype !== 'empty') {
+    html += `<div class="insp-field">
+      <label class="insp-label">Value</label>
+      <input class="insp-input" data-key="value" value="${node.value || ''}" placeholder="comparison value">
+    </div>`;
+  }
+  if (node.type === 'action' && (node.subtype === 'require' || node.subtype === 'show' || node.subtype === 'hide' || node.subtype === 'default')) {
+    html += `<div class="insp-field">
+      <label class="insp-label">Target field</label>
+      <select class="insp-select" data-key="target">
+        ${FIELDS.map(f => `<option value="${f}" ${node.target===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  if (node.type === 'action' && node.subtype === 'default') {
+    html += `<div class="insp-field">
+      <label class="insp-label">Default value</label>
+      <input class="insp-input" data-key="value" value="${node.value || ''}" placeholder="default">
+    </div>`;
+  }
+  if (node.type === 'action' && (node.subtype === 'error' || node.subtype === 'confirm')) {
+    html += `<div class="insp-field">
+      <label class="insp-label">Message</label>
+      <input class="insp-input" data-key="value" value="${node.value || ''}" placeholder="message to user">
+    </div>`;
+  }
+
+  html += `<button class="insp-delete" id="inspDelBtn">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10M6 5V3h4v2M5 5l1 9h4l1-9"/></svg>
+    Delete node
+  </button>`;
+
+  body.innerHTML = html;
+
+  body.querySelectorAll('[data-key]').forEach(input => {
+    input.addEventListener('input', () => {
+      node[input.dataset.key] = input.value;
+      renderNodes();
+    });
+  });
+
+  document.getElementById('inspDelBtn').addEventListener('click', () => {
+    deleteNode(node.id);
+  });
+
+  insp.classList.add('open');
+}
+
+function closeInspector() {
+  document.getElementById('inspector').classList.remove('open');
+}
+
+document.getElementById('inspClose').addEventListener('click', () => {
+  state.selectedId = null;
+  closeInspector();
+  renderNodes();
+});
+
+function deleteNode(id) {
+  state.nodes = state.nodes.filter(n => n.id !== id);
+  state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
+  state.selectedId = null;
+  closeInspector();
+  renderNodes();
+  renderEdges();
+}
+
+/* ==================== MINIMAP ==================== */
+function renderMinimap() {
+  const mm = document.getElementById('minimap');
+  if (state.nodes.length === 0) { mm.innerHTML = ''; return; }
+  const minX = Math.min(...state.nodes.map(n => n.x)) - 50;
+  const maxX = Math.max(...state.nodes.map(n => n.x + 200)) + 50;
+  const minY = Math.min(...state.nodes.map(n => n.y)) - 50;
+  const maxY = Math.max(...state.nodes.map(n => n.y + 80)) + 50;
+  const w = maxX - minX;
+  const h = maxY - minY;
+  const mmW = mm.offsetWidth;
+  const mmH = mm.offsetHeight;
+  const scale = Math.min(mmW / w, mmH / h);
+  const offsetX = (mmW - w * scale) / 2;
+  const offsetY = (mmH - h * scale) / 2;
+
+  let html = '';
+  state.nodes.forEach(n => {
+    const x = (n.x - minX) * scale + offsetX;
+    const y = (n.y - minY) * scale + offsetY;
+    html += `<div class="minimap-node ${n.type}" style="left:${x}px;top:${y}px;width:${200*scale}px;height:${76*scale}px;"></div>`;
+  });
+
+  // viewport rectangle
+  const rect = canvas.getBoundingClientRect();
+  const viewX = (-state.pan.x / state.zoom - minX) * scale + offsetX;
+  const viewY = (-state.pan.y / state.zoom - minY) * scale + offsetY;
+  const viewW = (rect.width / state.zoom) * scale;
+  const viewH = (rect.height / state.zoom) * scale;
+  html += `<div class="minimap-viewport" style="left:${viewX}px;top:${viewY}px;width:${viewW}px;height:${viewH}px;"></div>`;
+
+  mm.innerHTML = html;
+}
+
+/* ==================== JSON OUTPUT ==================== */
+document.getElementById('btnViewJson').addEventListener('click', () => {
+  const flows = buildFlowJson();
+  alert('Generated rules:\n\n' + JSON.stringify(flows, null, 2));
+});
+
+document.getElementById('btnRun').addEventListener('click', () => {
+  openTestPanel();
+});
+
+/* ==================== TEST PANEL ==================== */
+function evalConditionNode(node, values) {
+  const v = values[node.field] ?? '';
+  const expected = node.value;
+  switch (node.subtype) {
+    case 'eq': return String(v) === String(expected);
+    case 'neq': return String(v) !== String(expected);
+    case 'gt': return parseFloat(v) > parseFloat(expected);
+    case 'lt': return parseFloat(v) < parseFloat(expected);
+    case 'empty': return v === '' || v == null;
+    case 'notempty': return v !== '' && v != null;
+    default: return false;
+  }
+}
+
+// Walk the graph from a trigger node, returning state changes + log entries
+function evaluateGraph(triggerNode, values) {
+  const fieldState = {};
+  const log = [];
+  const visited = new Set();
+
+  function visit(nodeId, branchPassed) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+
+    const outEdges = state.edges.filter(e => e.from === nodeId);
+    outEdges.forEach(edge => {
+      const target = state.nodes.find(n => n.id === edge.to);
+      if (!target) return;
+
+      if (target.type === 'cond') {
+        const result = evalConditionNode(target, values);
+        log.push({
+          type: 'cond',
+          nodeId: target.id,
+          label: `${target.field} ${target.subtype} ${target.value || ''}`.trim(),
+          result
+        });
+        // Walk each downstream branch of this condition.
+        // For yes/no edges, fire only the branch whose port matches the condition result.
+        // For a plain 'out' edge (rare for cond, but possible), follow it unconditionally.
+        const childEdges = state.edges.filter(e => e.from === target.id);
+        childEdges.forEach(ce => {
+          const passesThisBranch =
+            (ce.fromPort === 'yes' && result) ||
+            (ce.fromPort === 'no' && !result) ||
+            (ce.fromPort !== 'yes' && ce.fromPort !== 'no'); // unlabelled = always
+          if (passesThisBranch) {
+            // Walk into the downstream node carrying branchPassed=true
+            walkInto(ce.to, true);
+          } else {
+            // The other branch was taken; log skipped actions for visibility
+            const skipped = state.nodes.find(n => n.id === ce.to);
+            if (skipped && skipped.type === 'action') {
+              log.push({
+                type: 'action',
+                nodeId: skipped.id,
+                label: actionLabel(skipped),
+                fired: false,
+                reason: `${ce.fromPort} branch not taken`
+              });
+            }
+          }
+        });
+      } else if (target.type === 'action') {
+        if (branchPassed) {
+          const applied = applyAction(target, fieldState);
+          log.push({
+            type: 'action',
+            nodeId: target.id,
+            label: actionLabel(target),
+            fired: true,
+            applied
+          });
+        }
+        // Continue past the action in case it chains to something else
+        visit(target.id, branchPassed);
+      }
+    });
+  }
+
+  // Walk into a node directly (used when a condition branch passes — we need to
+  // evaluate the node at ce.to rather than re-entering the condition).
+  function walkInto(nodeId, branchPassed) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    const target = state.nodes.find(n => n.id === nodeId);
+    if (!target) return;
+
+    if (target.type === 'cond') {
+      // A condition downstream of another condition — evaluate it and recurse.
+      const result = evalConditionNode(target, values);
+      log.push({
+        type: 'cond',
+        nodeId: target.id,
+        label: `${target.field} ${target.subtype} ${target.value || ''}`.trim(),
+        result
+      });
+      const childEdges = state.edges.filter(e => e.from === target.id);
+      childEdges.forEach(ce => {
+        const passes =
+          (ce.fromPort === 'yes' && result) ||
+          (ce.fromPort === 'no' && !result) ||
+          (ce.fromPort !== 'yes' && ce.fromPort !== 'no');
+        if (passes) walkInto(ce.to, branchPassed);
+        else {
+          const skipped = state.nodes.find(n => n.id === ce.to);
+          if (skipped && skipped.type === 'action') {
+            log.push({ type: 'action', nodeId: skipped.id, label: actionLabel(skipped), fired: false });
+          }
+        }
+      });
+    } else if (target.type === 'action') {
+      if (branchPassed) {
+        const applied = applyAction(target, fieldState);
+        log.push({ type: 'action', nodeId: target.id, label: actionLabel(target), fired: true, applied });
+      }
+      // Follow any further chained edges from this action
+      const childEdges = state.edges.filter(e => e.from === target.id);
+      childEdges.forEach(ce => walkInto(ce.to, branchPassed));
+    }
+  }
+
+  visit(triggerNode.id, true);
+  return { fieldState, log };
+}
+
+function actionLabel(node) {
+  switch (node.subtype) {
+    case 'require': return `require ${node.target}`;
+    case 'show': return `show ${node.target}`;
+    case 'hide': return `hide ${node.target}`;
+    case 'default': return `default ${node.target} = ${node.value}`;
+    case 'error': return `error: "${node.value}"`;
+    case 'confirm': return `confirm: "${node.value}"`;
+    default: return node.subtype;
+  }
+}
+
+function applyAction(node, fieldState) {
+  const f = node.target;
+  function ensure(field) {
+    if (!fieldState[field]) fieldState[field] = { required:false, hidden:false, error:null, default:null, confirm:null };
+    return fieldState[field];
+  }
+  switch (node.subtype) {
+    case 'require': if (f) { ensure(f).required = true; } return true;
+    case 'show': if (f) { ensure(f).hidden = false; ensure(f).shownExplicitly = true; } return true;
+    case 'hide': if (f) { ensure(f).hidden = true; } return true;
+    case 'default': if (f) { ensure(f).default = node.value; } return true;
+    case 'error':
+      // error attaches to the trigger field (closest equivalent in flow model)
+      // we'll show it as a "form-level" notice
+      ensure('__form__').error = node.value;
+      return true;
+    case 'confirm':
+      ensure('__form__').confirm = node.value;
+      return true;
+  }
+  return false;
+}
+
+function collectUsedFields() {
+  const fields = new Set();
+  state.nodes.forEach(n => {
+    if (n.field) fields.add(n.field);
+    if (n.target) fields.add(n.target);
+  });
+  return [...fields];
+}
+
+function runAllTriggers(values, changedField) {
+  const merged = {};
+  const allLogs = [];
+
+  // onLoad triggers always fire
+  state.nodes.filter(n => n.type === 'trigger' && n.subtype === 'load').forEach(t => {
+    const { fieldState, log } = evaluateGraph(t, values);
+    allLogs.push({ trigger: t, log });
+    mergeState(merged, fieldState);
+  });
+
+  // onChange triggers fire for fields that have values entered (or specifically the changedField)
+  state.nodes.filter(n => n.type === 'trigger' && n.subtype === 'change').forEach(t => {
+    if (!t.field) return;
+    // Fire if the field has any value entered (matching table-view semantics)
+    if (values[t.field] !== undefined && values[t.field] !== '') {
+      const { fieldState, log } = evaluateGraph(t, values);
+      allLogs.push({ trigger: t, log });
+      mergeState(merged, fieldState);
+    }
+  });
+
+  return { fieldState: merged, logs: allLogs };
+}
+
+function mergeState(into, from) {
+  Object.keys(from).forEach(k => {
+    if (!into[k]) into[k] = { required:false, hidden:false, error:null, default:null, confirm:null };
+    if (from[k].required) into[k].required = true;
+    if (from[k].hidden) into[k].hidden = true;
+    if (from[k].shownExplicitly) into[k].hidden = false; // show wins over hide if both applied
+    if (from[k].default && !into[k].default) into[k].default = from[k].default;
+    if (from[k].error) into[k].error = from[k].error;
+    if (from[k].confirm) into[k].confirm = from[k].confirm;
+  });
+}
+
+function openTestPanel() {
+  const usedFields = collectUsedFields();
+  const panel = document.getElementById('testPanel');
+  const body = document.getElementById('testBody');
+
+  if (usedFields.length === 0) {
+    body.innerHTML = `<div class="test-empty">
+      <svg width="28" height="28" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity:0.5;margin-bottom:10px;"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg>
+      <div>No fields are referenced by any rule yet.</div>
+      <div style="margin-top:6px;">Add trigger, condition, or action nodes to see them here.</div>
+    </div>`;
+    panel.classList.add('open');
+    return;
+  }
+
+  let html = '<div style="font-size:11px; color:var(--ink-3); margin-bottom:14px; line-height:1.5;">Enter values to see your rules fire in real time. Each change re-evaluates the whole graph.</div>';
+  usedFields.forEach(f => {
+    const choices = collectFieldChoices(f);
+    let control;
+    if (choices.length > 0) {
+      const options = ['<option value="">— choose —</option>']
+        .concat(choices.map(c => `<option value="${escapeAttr(c)}">${escapeText(c)}</option>`))
+        .join('');
+      control = `<select class="test-input" data-test-field="${f}">${options}</select>`;
+    } else {
+      control = `<input class="test-input" data-test-field="${f}" placeholder="—" autocomplete="off">`;
+    }
+    html += `
+      <div class="test-field" data-field="${f}">
+        <label class="test-label">${f}</label>
+        ${control}
+      </div>
+    `;
+  });
+  html += `
+    <div id="formErrorBox"></div>
+    <div class="test-log">
+      <div class="test-log-title">
+        <span>Activity log</span>
+        <span class="log-count" id="logCount">0</span>
+      </div>
+      <div id="logEntries"></div>
+    </div>
+  `;
+  body.innerHTML = html;
+
+  body.querySelectorAll('.test-input').forEach(input => {
+    const evt = input.tagName === 'SELECT' ? 'change' : 'input';
+    input.addEventListener(evt, () => updateTestForm(input.dataset.testField));
+  });
+
+  panel.classList.add('open');
+  updateTestForm(null);
+}
+
+// Collect the set of values for a given field. Combines:
+//   1. Explicit options from FIELD_OPTIONS (the curated list)
+//   2. Values discovered in eq/neq condition nodes (so new rules auto-extend the dropdown)
+// gt/lt/empty conditions are not enumerable so they don't contribute.
+function collectFieldChoices(field) {
+  const set = new Set(FIELD_OPTIONS[field] || []);
+  state.nodes.forEach(n => {
+    if (n.type === 'cond' && n.field === field && (n.subtype === 'eq' || n.subtype === 'neq')) {
+      if (n.value !== undefined && n.value !== null && n.value !== '') set.add(String(n.value));
+    }
+  });
+  return [...set];
+}
+
+function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+function escapeText(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function updateTestForm(changedField) {
+  const values = {};
+  document.querySelectorAll('[data-test-field]').forEach(i => {
+    values[i.dataset.testField] = i.value;
+  });
+
+  const { fieldState, logs } = runAllTriggers(values, changedField);
+
+  // Update field UI
+  document.querySelectorAll('.test-field').forEach(fieldEl => {
+    const fname = fieldEl.dataset.field;
+    const fs = fieldState[fname];
+    const label = fieldEl.querySelector('.test-label');
+    const input = fieldEl.querySelector('.test-input');
+
+    fieldEl.classList.remove('hidden');
+    label.classList.remove('required');
+    input.classList.remove('required-field', 'error-field');
+
+    if (fs) {
+      if (fs.hidden) fieldEl.classList.add('hidden');
+      if (fs.required) {
+        label.classList.add('required');
+        input.classList.add('required-field');
+      }
+      if (input.tagName !== 'SELECT') {
+        if (fs.default && !input.value) {
+          input.placeholder = `default: ${fs.default}`;
+        } else {
+          input.placeholder = '—';
+        }
+      }
+    } else {
+      if (input.tagName !== 'SELECT') input.placeholder = '—';
+    }
+  });
+
+  // Form-level error / confirm
+  const errBox = document.getElementById('formErrorBox');
+  errBox.innerHTML = '';
+  const formState = fieldState['__form__'];
+  if (formState) {
+    if (formState.error) {
+      errBox.innerHTML += `
+        <div class="test-error" style="margin-bottom:6px;">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg>
+          ${formState.error}
+        </div>`;
+    }
+    if (formState.confirm) {
+      errBox.innerHTML += `
+        <div class="test-confirm">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5a2 2 0 012-2h6a2 2 0 012 2v4a2 2 0 01-2 2H7l-4 3v-3a2 2 0 010-4z"/></svg>
+          <div><strong style="font-weight:500;">Confirmation:</strong> ${formState.confirm}</div>
+        </div>`;
+    }
+  }
+
+  // Log
+  const logEl = document.getElementById('logEntries');
+  const countEl = document.getElementById('logCount');
+  const flatLog = [];
+  logs.forEach(({ trigger, log }) => {
+    flatLog.push({ type:'trigger', label: trigger.subtype === 'load' ? 'on form load' : `on change: ${trigger.field}`, nodeId: trigger.id });
+    log.forEach(l => flatLog.push(l));
+  });
+
+  if (flatLog.length === 0) {
+    logEl.innerHTML = `<div style="font-size:11px; color:var(--ink-4); padding:8px; text-align:center;">No rules fired yet — enter values above.</div>`;
+    countEl.textContent = '0';
+  } else {
+    let fired = 0;
+    logEl.innerHTML = flatLog.map(l => {
+      if (l.type === 'trigger') {
+        return `<div class="log-entry" style="background:var(--trigger-soft); border-left-color:var(--trigger); color:var(--trigger);"><span class="log-step">▶</span><span>${l.label}</span></div>`;
+      }
+      if (l.type === 'cond') {
+        const mark = l.result ? '✓' : '✗';
+        const color = l.result ? 'var(--action)' : 'var(--danger)';
+        return `<div class="log-entry" style="border-left-color:${color};"><span class="log-step" style="color:${color};">${mark}</span><span>${l.label}</span></div>`;
+      }
+      if (l.type === 'action') {
+        if (l.fired) { fired++; return `<div class="log-entry fired"><span class="log-step">→</span><span>${l.label}</span></div>`; }
+        return `<div class="log-entry blocked"><span class="log-step">—</span><span>${l.label}</span></div>`;
+      }
+      return '';
+    }).join('');
+    countEl.textContent = flatLog.filter(l => l.type !== 'trigger').length;
+  }
+}
+
+document.getElementById('btnCloseTest').addEventListener('click', () => {
+  document.getElementById('testPanel').classList.remove('open');
+});
+
+function buildFlowJson() {
+  // Walk from each trigger
+  const triggers = state.nodes.filter(n => n.type === 'trigger');
+  return triggers.map(t => {
+    const flow = { trigger: { type: t.subtype, field: t.field || null }, conditions: [], actions: [] };
+    // BFS from trigger
+    const visited = new Set();
+    function walk(nodeId, branch) {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      const outEdges = state.edges.filter(e => e.from === nodeId);
+      outEdges.forEach(e => {
+        const target = state.nodes.find(n => n.id === e.to);
+        if (!target) return;
+        if (target.type === 'cond') {
+          flow.conditions.push({ op: target.subtype, field: target.field, value: target.value, branch: e.fromPort });
+          walk(target.id, e.fromPort);
+        } else if (target.type === 'action') {
+          flow.actions.push({ type: target.subtype, target: target.target, value: target.value, branch });
+        }
+      });
+    }
+    walk(t.id, 'main');
+    return flow;
+  });
+}
+
+/* ==================== INIT ==================== */
+applyTransform();
+renderNodes();
+renderEdges();
+renderMinimap();
+
+window.addEventListener('resize', renderMinimap);
+</script>
+</body>
+</html>

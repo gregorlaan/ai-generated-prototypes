@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rule Builder — Table View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBFAF7;
+    --surface: #FFFFFF;
+    --surface-muted: #F4F2EC;
+    --border: #E5E1D6;
+    --border-strong: #CDC7B6;
+    --ink: #1A1814;
+    --ink-2: #4A463C;
+    --ink-3: #8B8675;
+    --accent: #B8542A;
+    --accent-soft: #FBEFE6;
+    --trigger: #2E5C8F;
+    --trigger-soft: #E8EFF7;
+    --field: #5B4A8C;
+    --field-soft: #EDEAF5;
+    --cond: #6B6557;
+    --cond-soft: #EFECE3;
+    --value: #8B5E1B;
+    --value-soft: #F7EDD9;
+    --action: #2F6B4F;
+    --action-soft: #E6F0EA;
+    --danger: #A23429;
+    --danger-soft: #F7E7E4;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --shadow-sm: 0 1px 2px rgba(26,24,20,0.04);
+    --shadow-md: 0 4px 16px rgba(26,24,20,0.06), 0 1px 3px rgba(26,24,20,0.04);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 1200px 600px at 80% -10%, rgba(184,84,42,0.04), transparent),
+      radial-gradient(ellipse 800px 400px at 0% 100%, rgba(46,92,143,0.03), transparent);
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .breadcrumb {
+    font-size: 12px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .breadcrumb-sep {
+    margin: 0 8px;
+    opacity: 0.5;
+  }
+
+  .title {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    margin: 6px 0 0;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 4px 0 0;
+  }
+
+  .header-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .btn:hover {
+    background: var(--surface-muted);
+    border-color: var(--ink-3);
+  }
+
+  .btn:active { transform: translateY(0.5px); }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  .btn-primary:hover {
+    background: #000;
+    border-color: #000;
+  }
+
+  .btn-ghost {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .btn-ghost:hover {
+    background: var(--surface-muted);
+    border-color: var(--border);
+  }
+
+  .btn svg { width: 14px; height: 14px; }
+
+  /* Stats strip */
+  .stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  .stat-toolbar {
+    margin-left: auto;
+    align-self: center;
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: var(--surface-muted);
+  }
+
+  th {
+    text-align: left;
+    padding: 11px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody tr:hover {
+    background: rgba(184,84,42,0.02);
+  }
+
+  tbody tr.dragging {
+    opacity: 0.4;
+    background: var(--surface-muted);
+  }
+
+  td {
+    padding: 8px 10px;
+    vertical-align: middle;
+  }
+
+  .col-handle { width: 32px; padding-left: 14px; }
+  .col-num { width: 36px; }
+  .col-trigger { width: 130px; }
+  .col-field { width: 150px; }
+  .col-cond { width: 130px; }
+  .col-value { width: 140px; }
+  .col-action { width: 140px; }
+  .col-target { min-width: 160px; }
+  .col-active { width: 56px; }
+  .col-del { width: 40px; }
+
+  .handle {
+    color: var(--ink-3);
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    transition: opacity 0.12s;
+  }
+
+  tr:hover .handle { opacity: 1; }
+
+  .handle:active { cursor: grabbing; }
+
+  .num-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+
+  /* Form controls */
+  .input, .select {
+    width: 100%;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .input:hover, .select:hover {
+    background: var(--surface-muted);
+    border-color: var(--border);
+  }
+
+  .input:focus, .select:focus {
+    outline: none;
+    background: var(--surface);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%238B8675' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 22px;
+  }
+
+  /* Type tags on select values */
+  .select.tag-trigger { color: var(--trigger); font-weight: 500; }
+  .select.tag-field { color: var(--field); font-weight: 500; }
+  .select.tag-cond { color: var(--cond); font-weight: 500; }
+  .select.tag-action { color: var(--action); font-weight: 500; }
+
+  /* Toggle switch */
+  .switch {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+
+  .switch.on { background: var(--action); }
+
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: left 0.18s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .switch.on::after { left: 16px; }
+
+  .icon-btn {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    color: var(--ink-3);
+    cursor: pointer;
+    transition: all 0.12s;
+    opacity: 0.5;
+  }
+
+  tr:hover .icon-btn { opacity: 1; }
+
+  .icon-btn:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  /* Add row */
+  .add-row {
+    padding: 12px 14px;
+    background: var(--surface-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .add-row-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--ink-2);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .add-row-btn:hover {
+    background: var(--surface);
+    border-color: var(--ink-3);
+    border-style: solid;
+    color: var(--ink);
+  }
+
+  .add-row-btn svg { width: 12px; height: 12px; }
+
+  /* Footer info */
+  .footer {
+    margin-top: 14px;
+    padding: 0 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .footer-tip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 5px;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink-2);
+  }
+
+  /* JSON modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,20,0.4);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.18s ease;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 640px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .modal-body {
+    padding: 0;
+    overflow: auto;
+    flex: 1;
+  }
+
+  pre {
+    margin: 0;
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--surface-muted);
+    overflow: auto;
+  }
+
+  .json-key { color: var(--field); }
+  .json-string { color: var(--action); }
+  .json-num { color: var(--accent); }
+  .json-bool { color: var(--trigger); }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Test panel */
+  .test-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 380px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.06);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .test-panel.open { transform: translateX(0); }
+
+  .test-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .test-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .test-field {
+    margin-bottom: 14px;
+  }
+
+  .test-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .test-input {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .test-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .test-input.required-marker {
+    border-color: var(--accent);
+  }
+
+  .test-label.required-marker::after {
+    content: ' *';
+    color: var(--accent);
+  }
+
+  .test-field.hidden { display: none; }
+
+  .test-error {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .test-log {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background: var(--surface-muted);
+    color: var(--ink-2);
+    border-left: 2px solid var(--action);
+  }
+
+  .log-entry.fired {
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* Animations on add */
+  tr.new-row {
+    animation: slideInRow 0.3s ease;
+  }
+
+  @keyframes slideInRow {
+    from { background: var(--accent-soft); opacity: 0.5; }
+    to { background: transparent; opacity: 1; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="header">
+    <div class="header-left">
+      <div>
+        <div class="breadcrumb">Forms<span class="breadcrumb-sep">›</span>Purchase order<span class="breadcrumb-sep">›</span>Rules</div>
+        <h1 class="title">Conditional logic</h1>
+        <p class="subtitle">Build form behavior without writing JavaScript</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-ghost" id="btnViewJson">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg>
+        View JSON
+      </button>
+      <button class="btn" id="btnTest">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l8 5-8 5V3z"/></svg>
+        Test rules
+      </button>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l3 3 7-7"/></svg>
+        Save
+      </button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Active rules</span>
+      <span class="stat-value" id="statActive">5</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-label">Events</span>
+      <span class="stat-value" id="statTriggers">Load · Change</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-label">Last edited</span>
+      <span class="stat-value">Today</span>
+    </div>
+    <div class="stat-toolbar">
+      <button class="btn btn-ghost">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M8 3v10"/></svg>
+        Filter
+      </button>
+      <button class="btn btn-ghost">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10M5 8h6M7 11h2"/></svg>
+        Sort
+      </button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-handle"></th>
+          <th class="col-num">#</th>
+          <th class="col-trigger">Event</th>
+          <th class="col-field">Field</th>
+          <th class="col-cond">Condition</th>
+          <th class="col-value">Value</th>
+          <th class="col-action">Then</th>
+          <th class="col-target">Target / message</th>
+          <th class="col-active">On</th>
+          <th class="col-del"></th>
+        </tr>
+      </thead>
+      <tbody id="ruleBody"></tbody>
+    </table>
+    <div class="add-row">
+      <button class="add-row-btn" id="btnAddRule">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M8 3v10"/></svg>
+        Add rule
+      </button>
+      <span style="color: var(--ink-3); font-size: 12px;">or duplicate an existing one</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-tip">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg>
+      Rules run top to bottom — later rules can override earlier ones
+    </div>
+    <div>
+      Press <span class="kbd">⌘</span> <span class="kbd">S</span> to save
+    </div>
+  </div>
+
+</div>
+
+<!-- JSON Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Generated rule JSON</h3>
+      <button class="btn btn-ghost" id="btnCloseModal">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <pre id="jsonOut"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="btnCopyJson">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11V3a1 1 0 011-1h8"/></svg>
+        Copy
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Test Panel -->
+<div class="test-panel" id="testPanel">
+  <div class="test-header">
+    <h3 style="font-family: Fraunces; font-size: 18px; font-weight: 500; margin: 0;">Test your form</h3>
+    <button class="btn btn-ghost" id="btnCloseTest">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+    </button>
+  </div>
+  <div class="test-body" id="testBody"></div>
+</div>
+
+<script>
+/* ---------- Vocabulary ---------- */
+const FIELDS = ['country', 'state', 'amount', 'doc_type', 'expires_in', 'vendor_type', 'tax_id', 'delete_flag', 'email', 'currency'];
+const TRIGGERS = [['change','On field change'], ['load','On form load']];
+const CONDITIONS = [['eq','equals'], ['neq','not equals'], ['gt','greater than'], ['lt','less than'], ['empty','is empty'], ['notempty','is not empty'], ['contains','contains']];
+const ACTIONS = [
+  ['require','Make required'],
+  ['optional','Make optional'],
+  ['show','Show field'],
+  ['hide','Hide field'],
+  ['default','Set default value'],
+  ['error','Show error message'],
+  ['confirm','Ask confirmation']
+];
+
+const ACTION_TARGET_TYPE = {
+  require: 'field', optional: 'field', show: 'field', hide: 'field',
+  default: 'fieldvalue', error: 'message', confirm: 'message'
+};
+
+/* ---------- Seed data ---------- */
+let rules = [
+  { id:1, trigger:'change', field:'country', cond:'eq', value:'USA', action:'require', target:'state', targetValue:'', active:true },
+  { id:2, trigger:'change', field:'amount', cond:'gt', value:'10000', action:'error', target:'', targetValue:'Needs manager approval', active:true },
+  { id:3, trigger:'load', field:'doc_type', cond:'eq', value:'contract', action:'default', target:'expires_in', targetValue:'30', active:true },
+  { id:4, trigger:'change', field:'vendor_type', cond:'neq', value:'internal', action:'show', target:'tax_id', targetValue:'', active:true },
+  { id:5, trigger:'change', field:'delete_flag', cond:'eq', value:'true', action:'confirm', target:'', targetValue:'Are you sure you want to delete?', active:true },
+];
+let nextId = 6;
+
+/* ---------- Render table ---------- */
+function opt(value, label, selected) {
+  return `<option value="${value}" ${selected===value?'selected':''}>${label}</option>`;
+}
+
+function makeRow(r, idx, isNew) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = r.id;
+  tr.draggable = true;
+  if (isNew) tr.classList.add('new-row');
+
+  const targetType = ACTION_TARGET_TYPE[r.action];
+  let targetHtml = '';
+  if (targetType === 'field') {
+    targetHtml = `<select class="select tag-field" data-k="target">${FIELDS.map(f=>opt(f,f,r.target)).join('')}</select>`;
+  } else if (targetType === 'fieldvalue') {
+    targetHtml = `<div style="display:flex;gap:4px;">
+      <select class="select tag-field" data-k="target" style="flex:1.2;">${FIELDS.map(f=>opt(f,f,r.target)).join('')}</select>
+      <input class="input" data-k="targetValue" value="${r.targetValue||''}" placeholder="value" style="flex:1;">
+    </div>`;
+  } else {
+    targetHtml = `<input class="input" data-k="targetValue" value="${r.targetValue||''}" placeholder="message...">`;
+  }
+
+  tr.innerHTML = `
+    <td class="col-handle"><span class="handle" title="Drag to reorder">
+      <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="3" r="1"/><circle cx="7" cy="3" r="1"/><circle cx="3" cy="7" r="1"/><circle cx="7" cy="7" r="1"/><circle cx="3" cy="11" r="1"/><circle cx="7" cy="11" r="1"/></svg>
+    </span></td>
+    <td class="num-cell">${String(idx+1).padStart(2,'0')}</td>
+    <td><select class="select tag-trigger" data-k="trigger">${TRIGGERS.map(([v,l])=>opt(v,l,r.trigger)).join('')}</select></td>
+    <td><select class="select tag-field" data-k="field">${FIELDS.map(f=>opt(f,f,r.field)).join('')}</select></td>
+    <td><select class="select tag-cond" data-k="cond">${CONDITIONS.map(([v,l])=>opt(v,l,r.cond)).join('')}</select></td>
+    <td><input class="input" data-k="value" value="${r.value||''}" placeholder="value"></td>
+    <td><select class="select tag-action" data-k="action">${ACTIONS.map(([v,l])=>opt(v,l,r.action)).join('')}</select></td>
+    <td>${targetHtml}</td>
+    <td><div class="switch ${r.active?'on':''}" data-k="active"></div></td>
+    <td><span class="icon-btn" data-act="delete" title="Delete rule">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10M6 5V3h4v2M5 5l1 9h4l1-9"/></svg>
+    </span></td>
+  `;
+  return tr;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('ruleBody');
+  tbody.innerHTML = '';
+  rules.forEach((r, i) => tbody.appendChild(makeRow(r, i, false)));
+  document.getElementById('statActive').textContent = rules.filter(r=>r.active).length;
+}
+
+renderTable();
+
+/* ---------- Event delegation ---------- */
+document.getElementById('ruleBody').addEventListener('change', (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  const id = +tr.dataset.id;
+  const rule = rules.find(r => r.id === id);
+  const k = e.target.dataset.k;
+  if (!k || !rule) return;
+  rule[k] = e.target.value;
+  if (k === 'action') renderTable(); // target column shape can change
+});
+
+document.getElementById('ruleBody').addEventListener('input', (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  const id = +tr.dataset.id;
+  const rule = rules.find(r => r.id === id);
+  const k = e.target.dataset.k;
+  if (!k || !rule || e.target.tagName !== 'INPUT') return;
+  rule[k] = e.target.value;
+});
+
+document.getElementById('ruleBody').addEventListener('click', (e) => {
+  const sw = e.target.closest('.switch');
+  if (sw) {
+    const tr = sw.closest('tr');
+    const rule = rules.find(r => r.id === +tr.dataset.id);
+    rule.active = !rule.active;
+    sw.classList.toggle('on', rule.active);
+    document.getElementById('statActive').textContent = rules.filter(r=>r.active).length;
+    return;
+  }
+  const del = e.target.closest('[data-act="delete"]');
+  if (del) {
+    const tr = del.closest('tr');
+    rules = rules.filter(r => r.id !== +tr.dataset.id);
+    renderTable();
+  }
+});
+
+document.getElementById('btnAddRule').addEventListener('click', () => {
+  const newRule = { id: nextId++, trigger:'change', field:'country', cond:'eq', value:'', action:'require', target:'state', targetValue:'', active:true };
+  rules.push(newRule);
+  const tbody = document.getElementById('ruleBody');
+  tbody.appendChild(makeRow(newRule, rules.length-1, true));
+  document.getElementById('statActive').textContent = rules.filter(r=>r.active).length;
+});
+
+/* ---------- Drag and drop ---------- */
+let dragId = null;
+document.getElementById('ruleBody').addEventListener('dragstart', (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  dragId = +tr.dataset.id;
+  tr.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+});
+document.getElementById('ruleBody').addEventListener('dragend', (e) => {
+  const tr = e.target.closest('tr');
+  if (tr) tr.classList.remove('dragging');
+});
+document.getElementById('ruleBody').addEventListener('dragover', (e) => {
+  e.preventDefault();
+  const tr = e.target.closest('tr');
+  if (!tr || +tr.dataset.id === dragId) return;
+  const bounding = tr.getBoundingClientRect();
+  const offset = e.clientY - bounding.top - bounding.height / 2;
+  tr.style.borderTop = offset < 0 ? '2px solid var(--accent)' : '';
+  tr.style.borderBottom = offset >= 0 ? '2px solid var(--accent)' : '';
+});
+document.getElementById('ruleBody').addEventListener('dragleave', (e) => {
+  const tr = e.target.closest('tr');
+  if (tr) { tr.style.borderTop = ''; tr.style.borderBottom = ''; }
+});
+document.getElementById('ruleBody').addEventListener('drop', (e) => {
+  e.preventDefault();
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  const targetId = +tr.dataset.id;
+  if (targetId === dragId) return;
+  const bounding = tr.getBoundingClientRect();
+  const offset = e.clientY - bounding.top - bounding.height / 2;
+  const dragIdx = rules.findIndex(r => r.id === dragId);
+  const targetIdx = rules.findIndex(r => r.id === targetId);
+  const [moved] = rules.splice(dragIdx, 1);
+  let insertIdx = rules.findIndex(r => r.id === targetId);
+  if (offset >= 0) insertIdx += 1;
+  rules.splice(insertIdx, 0, moved);
+  renderTable();
+});
+
+/* ---------- JSON view ---------- */
+function highlightJson(s) {
+  return s
+    .replace(/("[^"]+"):/g, '<span class="json-key">$1</span>:')
+    .replace(/: ("[^"]*")/g, ': <span class="json-string">$1</span>')
+    .replace(/: (true|false|null)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span class="json-num">$1</span>');
+}
+
+function generateJson() {
+  const out = rules.map(r => {
+    const obj = {
+      trigger: r.trigger === 'load' ? 'onLoad' : `onChange:${r.field}`,
+      if: { var: r.field, op: r.cond, value: r.value },
+      then: { type: r.action }
+    };
+    if (ACTION_TARGET_TYPE[r.action] === 'field') obj.then.field = r.target;
+    if (ACTION_TARGET_TYPE[r.action] === 'fieldvalue') {
+      obj.then.field = r.target;
+      obj.then.value = r.targetValue;
+    }
+    if (ACTION_TARGET_TYPE[r.action] === 'message') obj.then.message = r.targetValue;
+    if (!r.active) obj.disabled = true;
+    return obj;
+  });
+  return JSON.stringify(out, null, 2);
+}
+
+document.getElementById('btnViewJson').addEventListener('click', () => {
+  const json = generateJson();
+  document.getElementById('jsonOut').innerHTML = highlightJson(json);
+  document.getElementById('modalBackdrop').classList.add('open');
+});
+
+document.getElementById('btnCloseModal').addEventListener('click', () => {
+  document.getElementById('modalBackdrop').classList.remove('open');
+});
+
+document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modalBackdrop') document.getElementById('modalBackdrop').classList.remove('open');
+});
+
+document.getElementById('btnCopyJson').addEventListener('click', (e) => {
+  navigator.clipboard.writeText(generateJson());
+  const btn = e.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l3 3 7-7"/></svg> Copied';
+  setTimeout(() => btn.innerHTML = orig, 1500);
+});
+
+/* ---------- Test panel ---------- */
+function evaluateRules(values) {
+  const state = {};
+  FIELDS.forEach(f => state[f] = { required: false, hidden: false, error: null, default: null });
+  const log = [];
+
+  rules.filter(r => r.active && r.trigger === 'load').forEach(r => {
+    const passed = evalCondition(r, values);
+    if (passed) {
+      applyAction(r, state, log);
+    }
+  });
+
+  Object.keys(values).forEach(field => {
+    rules.filter(r => r.active && r.trigger === 'change' && r.field === field).forEach(r => {
+      if (evalCondition(r, values)) applyAction(r, state, log);
+    });
+  });
+
+  return { state, log };
+}
+
+function evalCondition(r, values) {
+  const v = values[r.field] ?? '';
+  const expected = r.value;
+  switch (r.cond) {
+    case 'eq': return String(v) === String(expected);
+    case 'neq': return String(v) !== String(expected);
+    case 'gt': return parseFloat(v) > parseFloat(expected);
+    case 'lt': return parseFloat(v) < parseFloat(expected);
+    case 'empty': return v === '' || v == null;
+    case 'notempty': return v !== '' && v != null;
+    case 'contains': return String(v).includes(String(expected));
+    default: return false;
+  }
+}
+
+function applyAction(r, state, log) {
+  log.push({ rule: r.id, action: r.action, target: r.target || r.targetValue });
+  const t = r.target;
+  switch (r.action) {
+    case 'require': if (state[t]) state[t].required = true; break;
+    case 'optional': if (state[t]) state[t].required = false; break;
+    case 'show': if (state[t]) state[t].hidden = false; break;
+    case 'hide': if (state[t]) state[t].hidden = true; break;
+    case 'default': if (state[t]) state[t].default = r.targetValue; break;
+    case 'error': state[r.field] && (state[r.field].error = r.targetValue); break;
+    case 'confirm': /* visualized in log */ break;
+  }
+}
+
+function renderTestPanel() {
+  const body = document.getElementById('testBody');
+  const usedFields = [...new Set(rules.flatMap(r => [r.field, r.target].filter(Boolean)))];
+
+  let formHtml = '';
+  usedFields.forEach(f => {
+    formHtml += `
+      <div class="test-field" data-field="${f}">
+        <label class="test-label" data-for="${f}">${f}</label>
+        <input class="test-input" data-test-field="${f}" placeholder="enter ${f}">
+        <div class="test-error" data-error="${f}" style="display:none;"></div>
+      </div>
+    `;
+  });
+
+  body.innerHTML = formHtml + `<div class="test-log" id="testLog"><div class="test-label">Activity log</div><div id="logEntries" style="margin-top:8px;"></div></div>`;
+
+  body.querySelectorAll('.test-input').forEach(input => {
+    input.addEventListener('input', updateTestForm);
+  });
+
+  updateTestForm();
+}
+
+function updateTestForm() {
+  const values = {};
+  document.querySelectorAll('[data-test-field]').forEach(i => {
+    values[i.dataset.testField] = i.value;
+  });
+
+  const { state, log } = evaluateRules(values);
+
+  Object.keys(state).forEach(f => {
+    const fieldEl = document.querySelector(`.test-field[data-field="${f}"]`);
+    if (!fieldEl) return;
+    const labelEl = fieldEl.querySelector('.test-label');
+    const inputEl = fieldEl.querySelector('.test-input');
+    const errorEl = fieldEl.querySelector('.test-error');
+
+    fieldEl.classList.toggle('hidden', state[f].hidden);
+    labelEl.classList.toggle('required-marker', state[f].required);
+    inputEl.classList.toggle('required-marker', state[f].required);
+
+    if (state[f].default && !inputEl.value) {
+      inputEl.placeholder = `default: ${state[f].default}`;
+    }
+
+    if (state[f].error) {
+      errorEl.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg> ${state[f].error}`;
+      errorEl.style.display = 'flex';
+    } else {
+      errorEl.style.display = 'none';
+    }
+  });
+
+  const logEl = document.getElementById('logEntries');
+  if (log.length === 0) {
+    logEl.innerHTML = '<div style="font-size: 11px; color: var(--ink-3); padding: 6px;">No rules fired yet. Try entering values above.</div>';
+  } else {
+    logEl.innerHTML = log.map(l =>
+      `<div class="log-entry fired">Rule ${l.id} fired → ${l.action}${l.target ? ' (' + l.target + ')' : ''}</div>`
+    ).join('');
+  }
+}
+
+document.getElementById('btnTest').addEventListener('click', () => {
+  renderTestPanel();
+  document.getElementById('testPanel').classList.add('open');
+});
+
+document.getElementById('btnCloseTest').addEventListener('click', () => {
+  document.getElementById('testPanel').classList.remove('open');
+});
+
+/* Keyboard shortcuts */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    document.getElementById('testPanel').classList.remove('open');
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    // visual save indication only
+    const btn = document.querySelector('.btn-primary');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l3 3 7-7"/></svg> Saved';
+    setTimeout(() => btn.innerHTML = orig, 1200);
+  }
+});
+
+</script>
+</body>
+</html>
