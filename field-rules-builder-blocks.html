@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metadata Rules Designer Prototype</title>
+  <style>
+    :root {
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --emerald-50: #ecfdf5;
+      --emerald-100: #d1fae5;
+      --emerald-700: #047857;
+      --red-50: #fef2f2;
+      --red-100: #fee2e2;
+      --red-600: #dc2626;
+      --red-700: #b91c1c;
+      --blue-100: #dbeafe;
+      --blue-700: #1d4ed8;
+      --amber-50: #fffbeb;
+      --amber-100: #fef3c7;
+      --amber-800: #92400e;
+      --white: #fff;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --radius-xl: 14px;
+      --radius-2xl: 18px;
+      --radius-3xl: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--slate-50);
+      color: var(--slate-900);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    .app { min-height: 100vh; padding: 24px; }
+    .container { max-width: 1280px; margin: 0 auto; display: grid; gap: 24px; }
+    .header, .card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-3xl);
+      box-shadow: var(--shadow);
+    }
+    .header {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 48px; height: 48px;
+      display: grid; place-items: center;
+      border-radius: var(--radius-2xl);
+      background: var(--slate-900);
+      color: white;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; }
+    h2 { font-size: 20px; }
+    .muted { color: var(--slate-500); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: 24px; }
+    .preview-grid { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr); gap: 24px; }
+    .stack { display: grid; gap: 24px; }
+    .card-content { padding: 24px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .span-2 { grid-column: span 2; }
+    .row-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; padding: 12px; border: 1px solid var(--slate-200); background: var(--slate-50); border-radius: var(--radius-2xl); }
+    .section-list { display: grid; gap: 12px; }
+    label, .label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--slate-500);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    input, select {
+      width: 100%;
+      min-height: 39px;
+      padding: 8px 12px;
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius-xl);
+      background: white;
+      color: var(--slate-900);
+      font: inherit;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--slate-500); box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.35); }
+    .button {
+      border: 0;
+      border-radius: var(--radius-xl);
+      padding: 9px 14px;
+      background: var(--slate-900);
+      color: white;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .button:hover { background: var(--slate-700); }
+    .button.outline { background: white; color: var(--slate-900); border: 1px solid var(--slate-300); }
+    .button.outline:hover { background: var(--slate-100); }
+    .button.ghost { background: transparent; color: var(--slate-700); box-shadow: none; }
+    .button.ghost:hover { background: var(--slate-100); }
+    .button.icon { width: 38px; height: 38px; padding: 0; }
+    .button.small { padding: 7px 11px; font-size: 13px; }
+    .button:disabled { opacity: .4; cursor: not-allowed; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      white-space: nowrap;
+    }
+    .pill.green { background: var(--emerald-100); color: var(--emerald-700); }
+    .pill.red { background: var(--red-100); color: var(--red-700); }
+    .pill.blue { background: var(--blue-100); color: var(--blue-700); }
+    .pill.amber { background: var(--amber-100); color: var(--amber-800); }
+    .summary-box, .notice {
+      border-radius: var(--radius-2xl);
+      background: var(--slate-50);
+      padding: 16px;
+    }
+    .summary-box strong { display: block; margin-bottom: 2px; }
+    .notice { display: flex; gap: 8px; font-size: 14px; }
+    .notice.green { background: var(--emerald-50); color: var(--emerald-700); }
+    .notice.red { background: var(--red-50); color: var(--red-700); }
+    .notice.amber { background: var(--amber-50); color: var(--amber-800); }
+    .preview-field, .result-field, .test-row {
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-2xl);
+      padding: 16px;
+      background: white;
+    }
+    .preview-field.hidden {
+      background: var(--slate-100);
+      opacity: .68;
+    }
+    .preview-field-head, .result-field-head, .test-row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .result-field-head { margin-bottom: 0; }
+    .field-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .readonly-note { margin-top: 8px; color: var(--slate-500); font-size: 12px; }
+    .required { color: var(--red-600); }
+    .placeholder-box {
+      display: flex; align-items: center;
+      min-height: 39px;
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius-xl);
+      background: white;
+      color: var(--slate-400);
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    pre {
+      margin: 0;
+      overflow: auto;
+      border-radius: var(--radius-2xl);
+      background: #020617;
+      color: #f8fafc;
+      padding: 20px;
+      font-size: 13px;
+    }
+    .hidden-tab { display: none; }
+    .message-list { margin-top: 24px; display: grid; gap: 8px; }
+    .value-line { margin-top: 8px; color: var(--slate-500); font-size: 14px; }
+    .test-row.pass { background: var(--emerald-50); }
+    .test-row.fail { background: var(--red-50); }
+
+    @media (max-width: 980px) {
+      .header { flex-direction: column; align-items: flex-start; }
+      .main-grid, .preview-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .span-2 { grid-column: auto; }
+      .row-grid { grid-template-columns: 1fr; }
+      .card-head { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="container">
+      <header class="header">
+        <div class="brand">
+          <div class="brand-icon">≡</div>
+          <div>
+            <h1>Metadata Rules Designer</h1>
+            <p class="muted">Prototype for replacing JavaScript onload/onchange blocks with graphical business rules.</p>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Prototype tabs">
+          <button class="button" data-tab-button="builder">Rule builder</button>
+          <button class="button outline" data-tab-button="preview">Preview</button>
+          <button class="button outline" data-tab-button="json">JSON</button>
+          <button class="button outline" data-tab-button="tests">Tests</button>
+        </nav>
+      </header>
+
+      <main>
+        <section id="tab-builder"></section>
+        <section id="tab-preview" class="hidden-tab"></section>
+        <section id="tab-json" class="hidden-tab"></section>
+        <section id="tab-tests" class="hidden-tab"></section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const fields = [
+      { id: "customerType", label: "Customer Type", type: "select", options: ["Private", "Company", "Government"] },
+      { id: "country", label: "Country", type: "select", options: ["Estonia", "Latvia", "Lithuania", "Finland"] },
+      { id: "registryCode", label: "Registry Code", type: "text" },
+      { id: "vatNumber", label: "VAT Number", type: "text" },
+      { id: "contractStart", label: "Contract Start Date", type: "date" },
+      { id: "contractEnd", label: "Contract End Date", type: "date" },
+      { id: "documentStatus", label: "Document Status", type: "select", options: ["Draft", "Review", "Approved"] },
+      { id: "amount", label: "Amount", type: "number" },
+    ];
+
+    const fieldMap = Object.fromEntries(fields.map((field) => [field.id, field]));
+
+    const operators = [
+      { id: "equals", label: "equals" },
+      { id: "notEquals", label: "does not equal" },
+      { id: "empty", label: "is empty" },
+      { id: "notEmpty", label: "is not empty" },
+      { id: "contains", label: "contains" },
+      { id: "greaterThan", label: "is greater than" },
+      { id: "lessThan", label: "is less than" },
+    ];
+
+    const actionTypes = [
+      { id: "showField", label: "Show field", needsValue: false },
+      { id: "hideField", label: "Hide field", needsValue: false },
+      { id: "setRequired", label: "Make required", needsValue: false },
+      { id: "setOptional", label: "Make optional", needsValue: false },
+      { id: "setValue", label: "Set value", needsValue: true },
+      { id: "clearValue", label: "Clear value", needsValue: false },
+      { id: "showError", label: "Show error message", needsValue: true, messageOnly: true },
+      { id: "showConfirmation", label: "Show confirmation", needsValue: true, messageOnly: true },
+      { id: "makeReadonly", label: "Make read-only", needsValue: false },
+    ];
+
+    const state = {
+      activeTab: "builder",
+      rule: {
+        name: "Require company registry data",
+        enabled: true,
+        priority: 10,
+        trigger: { type: "fieldChange", fields: ["customerType"] },
+        conditions: {
+          mode: "all",
+          items: [{ field: "customerType", operator: "equals", value: "Company" }],
+        },
+        actions: [
+          { type: "showField", field: "registryCode", value: "" },
+          { type: "setRequired", field: "registryCode", value: "" },
+          { type: "showField", field: "vatNumber", value: "" },
+        ],
+        elseActions: [
+          { type: "hideField", field: "registryCode", value: "" },
+          { type: "setOptional", field: "registryCode", value: "" },
+          { type: "clearValue", field: "registryCode", value: "" },
+        ],
+      },
+      formValues: {
+        customerType: "Company",
+        country: "Estonia",
+        registryCode: "",
+        vatNumber: "",
+        contractStart: "2026-05-11",
+        contractEnd: "2026-06-11",
+        documentStatus: "Draft",
+        amount: "1000",
+      },
+      testResults: [],
+    };
+
+    function htmlEscape(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function evaluateCondition(condition, values) {
+      const raw = values[condition.field];
+      const value = raw === undefined || raw === null ? "" : String(raw);
+      const compare = String(condition.value ?? "");
+
+      switch (condition.operator) {
+        case "equals": return value === compare;
+        case "notEquals": return value !== compare;
+        case "empty": return value.trim() === "";
+        case "notEmpty": return value.trim() !== "";
+        case "contains": return value.toLowerCase().includes(compare.toLowerCase());
+        case "greaterThan": return Number(value) > Number(compare);
+        case "lessThan": return Number(value) < Number(compare);
+        default: return false;
+      }
+    }
+
+    function emptyRuleState(values) {
+      return {
+        values: { ...values },
+        visibility: Object.fromEntries(fields.map((field) => [field.id, true])),
+        required: Object.fromEntries(fields.map((field) => [field.id, false])),
+        readonly: Object.fromEntries(fields.map((field) => [field.id, false])),
+        messages: [],
+      };
+    }
+
+    function applyActions(actions, ruleState) {
+      const next = {
+        ...ruleState,
+        visibility: { ...ruleState.visibility },
+        required: { ...ruleState.required },
+        readonly: { ...ruleState.readonly },
+        values: { ...ruleState.values },
+        messages: [...ruleState.messages],
+      };
+
+      for (const action of actions || []) {
+        if (action.type === "showField") next.visibility[action.field] = true;
+        if (action.type === "hideField") next.visibility[action.field] = false;
+        if (action.type === "setRequired") next.required[action.field] = true;
+        if (action.type === "setOptional") next.required[action.field] = false;
+        if (action.type === "setValue") next.values[action.field] = action.value;
+        if (action.type === "clearValue") next.values[action.field] = "";
+        if (action.type === "showError") next.messages.push({ type: "error", text: action.value || "Validation error" });
+        if (action.type === "showConfirmation") next.messages.push({ type: "confirmation", text: action.value || "Please confirm" });
+        if (action.type === "makeReadonly") next.readonly[action.field] = true;
+      }
+
+      return next;
+    }
+
+    function evaluateRule(rule, values) {
+      const items = rule?.conditions?.items || [];
+      const mode = rule?.conditions?.mode || "all";
+      const matches = mode === "all"
+        ? items.every((condition) => evaluateCondition(condition, values))
+        : items.some((condition) => evaluateCondition(condition, values));
+
+      return {
+        matches,
+        state: applyActions(matches ? rule.actions : rule.elseActions, emptyRuleState(values)),
+      };
+    }
+
+    function runRuleEngineTests() {
+      const tests = [
+        {
+          name: "equals condition matches company",
+          actual: evaluateCondition({ field: "customerType", operator: "equals", value: "Company" }, { customerType: "Company" }),
+          expected: true,
+        },
+        {
+          name: "equals condition does not match private customer",
+          actual: evaluateCondition({ field: "customerType", operator: "equals", value: "Company" }, { customerType: "Private" }),
+          expected: false,
+        },
+        {
+          name: "empty condition treats whitespace as empty",
+          actual: evaluateCondition({ field: "registryCode", operator: "empty" }, { registryCode: "   " }),
+          expected: true,
+        },
+        {
+          name: "greaterThan compares numeric values",
+          actual: evaluateCondition({ field: "amount", operator: "greaterThan", value: "999" }, { amount: "1000" }),
+          expected: true,
+        },
+        {
+          name: "then actions make registry code required",
+          actual: evaluateRule(state.rule, { customerType: "Company", registryCode: "" }).state.required.registryCode,
+          expected: true,
+        },
+        {
+          name: "else actions hide registry code",
+          actual: evaluateRule(state.rule, { customerType: "Private", registryCode: "ABC" }).state.visibility.registryCode,
+          expected: false,
+        },
+        {
+          name: "else actions clear registry code",
+          actual: evaluateRule(state.rule, { customerType: "Private", registryCode: "ABC" }).state.values.registryCode,
+          expected: "",
+        },
+      ];
+
+      const results = tests.map((test) => ({ ...test, passed: Object.is(test.actual, test.expected) }));
+      const failed = results.filter((test) => !test.passed);
+
+      if (failed.length > 0) {
+        console.error("Rule engine tests failed", failed);
+      } else {
+        console.info(`Rule engine tests passed: ${results.length}/${results.length}`);
+      }
+
+      return results;
+    }
+
+    function selectHtml(value, options, attrs = "") {
+      return `<select ${attrs}>${options.map((option) => {
+        const optionValue = typeof option === "string" ? option : option.value;
+        const optionLabel = typeof option === "string" ? option : option.label;
+        return `<option value="${htmlEscape(optionValue)}" ${String(value ?? "") === String(optionValue) ? "selected" : ""}>${htmlEscape(optionLabel)}</option>`;
+      }).join("")}</select>`;
+    }
+
+    function inputHtml(value, attrs = "", type = "text", placeholder = "") {
+      return `<input type="${htmlEscape(type)}" value="${htmlEscape(value ?? "")}" placeholder="${htmlEscape(placeholder)}" ${attrs} />`;
+    }
+
+    function pill(label, tone = "") {
+      return `<span class="pill ${tone}">${label}</span>`;
+    }
+
+    function card(content) {
+      return `<div class="card"><div class="card-content">${content}</div></div>`;
+    }
+
+    function getConflicts() {
+      const allActions = [...state.rule.actions, ...state.rule.elseActions];
+      const hidden = new Set(allActions.filter((action) => action.type === "hideField").map((action) => action.field));
+      const required = new Set(allActions.filter((action) => action.type === "setRequired").map((action) => action.field));
+      return [...hidden].filter((field) => required.has(field));
+    }
+
+    function getRuleJson() {
+      return JSON.stringify({
+        name: state.rule.name,
+        enabled: state.rule.enabled,
+        priority: Number(state.rule.priority),
+        trigger: state.rule.trigger,
+        conditions: {
+          [state.rule.conditions.mode]: state.rule.conditions.items.map((condition) => ({
+            field: condition.field,
+            operator: condition.operator,
+            value: condition.value,
+          })),
+        },
+        actions: state.rule.actions,
+        elseActions: state.rule.elseActions,
+      }, null, 2);
+    }
+
+    function triggerLabel(rule) {
+      const typeMap = {
+        formLoad: "the form loads",
+        fieldChange: `${fieldMap[rule.trigger.fields?.[0]]?.label || "a field"} changes`,
+        beforeSave: "the user saves the form",
+        beforeGeneration: "the document is generated",
+      };
+      return typeMap[rule.trigger.type] || rule.trigger.type;
+    }
+
+    function conditionLabel(rule) {
+      return rule.conditions.items.map((condition) => {
+        const field = fieldMap[condition.field]?.label || condition.field;
+        const operator = operators.find((item) => item.id === condition.operator)?.label || condition.operator;
+        const needsValue = !["empty", "notEmpty"].includes(condition.operator);
+        return `${field} ${operator}${needsValue ? ` ${condition.value || "…"}` : ""}`;
+      }).join(rule.conditions.mode === "all" ? " AND " : " OR ");
+    }
+
+    function renderFieldControl(field, value, attrs = "") {
+      if (field.options) {
+        return selectHtml(value, field.options, attrs);
+      }
+
+      const type = field.type === "number" ? "number" : field.type === "date" ? "date" : "text";
+      return inputHtml(value, attrs, type);
+    }
+
+    function renderPreviewField(field, result, forceVisible = false) {
+      const visible = forceVisible || result.state.visibility[field.id] !== false;
+      const required = Boolean(result.state.required[field.id]);
+      const readonly = Boolean(result.state.readonly[field.id]);
+
+      return `
+        <div class="preview-field ${visible ? "" : "hidden"}">
+          <div class="preview-field-head">
+            <strong>${htmlEscape(field.label)} ${required ? '<span class="required">*</span>' : ""}</strong>
+            ${!visible ? pill("Hidden by rule") : ""}
+          </div>
+          ${renderFieldControl(field, state.formValues[field.id] || "", `data-form-field="${htmlEscape(field.id)}"`)}
+          ${readonly ? '<div class="readonly-note">This field would be read-only.</div>' : ""}
+        </div>
+      `;
+    }
+
+    function renderActionEditor(title, section) {
+      const rows = state.rule[section].map((action, index) => {
+        const selectedType = actionTypes.find((item) => item.id === action.type) || actionTypes[0];
+        const actionTypeOptions = actionTypes.map((item) => ({ value: item.id, label: item.label }));
+        const fieldOptions = fields.map((field) => ({ value: field.id, label: field.label }));
+
+        return `
+          <div class="row-grid">
+            ${selectHtml(action.type, actionTypeOptions, `data-action-section="${section}" data-action-index="${index}" data-action-prop="type"`)}
+            ${!selectedType.messageOnly
+              ? selectHtml(action.field, fieldOptions, `data-action-section="${section}" data-action-index="${index}" data-action-prop="field"`)
+              : '<div class="placeholder-box">Message</div>'
+            }
+            ${selectedType.needsValue
+              ? inputHtml(action.value, `data-action-section="${section}" data-action-index="${index}" data-action-prop="value"`, "text", selectedType.messageOnly ? "Message text" : "Value")
+              : '<div class="placeholder-box">No value needed</div>'
+            }
+            <button class="button ghost icon" data-remove-action="${section}" data-action-index="${index}" title="Remove action">×</button>
+          </div>
+        `;
+      }).join("");
+
+      return card(`
+        <div class="card-head">
+          <h2>${htmlEscape(title)}</h2>
+          <button class="button outline small" data-add-action="${section}">+ Add action</button>
+        </div>
+        <div class="section-list">${rows}</div>
+      `);
+    }
+
+    function renderBuilder() {
+      const result = evaluateRule(state.rule, state.formValues);
+      const conflicts = getConflicts();
+
+      const fieldOptions = fields.map((field) => ({ value: field.id, label: field.label }));
+      const operatorOptions = operators.map((operator) => ({ value: operator.id, label: operator.label }));
+
+      const conditionRows = state.rule.conditions.items.map((condition, index) => {
+        const needsValue = !["empty", "notEmpty"].includes(condition.operator);
+        const selectedField = fieldMap[condition.field];
+
+        const valueControl = !needsValue
+          ? '<div class="placeholder-box">No value needed</div>'
+          : selectedField?.options
+            ? selectHtml(condition.value, [{ value: "", label: "Choose value" }, ...selectedField.options], `data-condition-index="${index}" data-condition-prop="value"`)
+            : inputHtml(condition.value, `data-condition-index="${index}" data-condition-prop="value"`, "text", "Value");
+
+        return `
+          <div class="row-grid">
+            ${selectHtml(condition.field, fieldOptions, `data-condition-index="${index}" data-condition-prop="field"`)}
+            ${selectHtml(condition.operator, operatorOptions, `data-condition-index="${index}" data-condition-prop="operator"`)}
+            ${valueControl}
+            <button class="button ghost icon" data-remove-condition="${index}" ${state.rule.conditions.items.length === 1 ? "disabled" : ""} title="Remove condition">×</button>
+          </div>
+        `;
+      }).join("");
+
+      const conflictsHtml = conflicts.length
+        ? `<div class="section-list">${conflicts.map((field) => `<div class="notice red"><strong>!</strong> ${htmlEscape(fieldMap[field]?.label || field)} is both hidden and required in this rule.</div>`).join("")}</div>`
+        : '<div class="notice green"><strong>✓</strong> No obvious show/hide/required conflict detected.</div>';
+
+      document.getElementById("tab-builder").innerHTML = `
+        <div class="main-grid">
+          <div class="stack">
+            ${card(`
+              <div class="card-head">
+                <h2>1. Rule details</h2>
+                ${pill(state.rule.enabled ? "Enabled" : "Disabled", state.rule.enabled ? "green" : "red")}
+              </div>
+              <div class="form-grid">
+                <div class="span-2">
+                  <label>Rule name</label>
+                  ${inputHtml(state.rule.name, 'data-rule-prop="name"')}
+                </div>
+                <div>
+                  <label>Priority</label>
+                  ${inputHtml(state.rule.priority, 'data-rule-prop="priority"', "number")}
+                </div>
+                <div>
+                  <label>Status</label>
+                  ${selectHtml(state.rule.enabled ? "enabled" : "disabled", [{ value: "enabled", label: "Enabled" }, { value: "disabled", label: "Disabled" }], 'data-rule-prop="enabled"')}
+                </div>
+                <div>
+                  <label>Run when</label>
+                  ${selectHtml(state.rule.trigger.type, [
+                    { value: "formLoad", label: "Form loads" },
+                    { value: "fieldChange", label: "Field changes" },
+                    { value: "beforeSave", label: "Before save" },
+                    { value: "beforeGeneration", label: "Before document generation" },
+                  ], 'data-trigger-prop="type"')}
+                </div>
+                <div>
+                  <label>Watched field</label>
+                  ${selectHtml(state.rule.trigger.fields?.[0] || "customerType", fieldOptions, 'data-trigger-prop="field"')}
+                </div>
+              </div>
+            `)}
+
+            ${card(`
+              <div class="card-head">
+                <h2>2. Conditions</h2>
+                <div class="tabs">
+                  ${selectHtml(state.rule.conditions.mode, [{ value: "all", label: "Match all" }, { value: "any", label: "Match any" }], 'data-conditions-mode="true"')}
+                  <button class="button outline small" data-add-condition="true">+ Add</button>
+                </div>
+              </div>
+              <div class="section-list">${conditionRows}</div>
+            `)}
+
+            ${renderActionEditor("3. Then actions", "actions")}
+            ${renderActionEditor("4. Else actions", "elseActions")}
+          </div>
+
+          <div class="stack">
+            ${card(`
+              <h2 style="margin-bottom: 16px;">Rule summary</h2>
+              <div class="section-list">
+                <div class="summary-box"><strong>When</strong><span class="muted">${htmlEscape(triggerLabel(state.rule))}</span></div>
+                <div class="summary-box"><strong>If</strong><span class="muted">${htmlEscape(conditionLabel(state.rule))}</span></div>
+                <div class="summary-box"><strong>Then</strong><span class="muted">${state.rule.actions.length} action(s)</span></div>
+                <div class="summary-box"><strong>Otherwise</strong><span class="muted">${state.rule.elseActions.length} action(s)</span></div>
+              </div>
+            `)}
+
+            ${card(`
+              <div class="card-head">
+                <h2>Conflict checks</h2>
+                ${conflicts.length ? pill("Needs review", "red") : pill("Looks good", "green")}
+              </div>
+              ${conflictsHtml}
+            `)}
+
+            ${card(`
+              <h2 style="margin-bottom: 16px;">Live test</h2>
+              <div class="notice" style="margin-bottom: 16px;"><strong>▶</strong> Current condition result: ${pill(result.matches ? "Matched" : "Not matched", result.matches ? "green" : "")}</div>
+              <div class="section-list">
+                ${fields.map((field) => renderPreviewField(field, result)).join("")}
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPreview() {
+      const result = evaluateRule(state.rule, state.formValues);
+
+      const resultFields = fields.map((field) => `
+        <div class="result-field">
+          <div class="result-field-head">
+            <strong>${htmlEscape(field.label)}</strong>
+            <div class="field-badges">
+              ${result.state.visibility[field.id] ? pill("👁 Visible", "blue") : pill("◌ Hidden")}
+              ${result.state.required[field.id] ? pill("Required", "red") : ""}
+              ${result.state.readonly[field.id] ? pill("Read-only") : ""}
+            </div>
+          </div>
+          <div class="value-line">Value: ${htmlEscape(String(result.state.values[field.id] ?? "") || "—")}</div>
+        </div>
+      `).join("");
+
+      const messages = result.state.messages.length > 0
+        ? `<div class="message-list"><h3>Messages</h3>${result.state.messages.map((message) => `<div class="notice amber">${htmlEscape(message.text)}</div>`).join("")}</div>`
+        : "";
+
+      document.getElementById("tab-preview").innerHTML = `
+        <div class="preview-grid">
+          ${card(`
+            <h2 style="margin-bottom: 16px;">Test data</h2>
+            <div class="section-list">
+              ${fields.map((field) => renderPreviewField(field, result, true)).join("")}
+            </div>
+          `)}
+          ${card(`
+            <div class="card-head">
+              <h2>Resulting form behavior</h2>
+              ${pill(result.matches ? "Then actions applied" : "Else actions applied", result.matches ? "green" : "")}
+            </div>
+            <div class="section-list">${resultFields}</div>
+            ${messages}
+          `)}
+        </div>
+      `;
+    }
+
+    function renderJson() {
+      document.getElementById("tab-json").innerHTML = card(`
+        <div class="brand" style="margin-bottom: 16px;">
+          <div class="brand-icon" style="width: 38px; height: 38px; font-size: 14px;">{}</div>
+          <div>
+            <h2>Generated structured rule JSON</h2>
+            <p class="muted">This is what the GUI can save instead of raw JavaScript.</p>
+          </div>
+        </div>
+        <pre><code>${htmlEscape(getRuleJson())}</code></pre>
+      `);
+    }
+
+    function renderTests() {
+      const testsPassed = state.testResults.length > 0 && state.testResults.every((test) => test.passed);
+
+      document.getElementById("tab-tests").innerHTML = card(`
+        <div class="card-head">
+          <div>
+            <h2>Built-in rule engine tests</h2>
+            <p class="muted">These tests run in the browser on load and also log results to the console.</p>
+          </div>
+          ${pill(testsPassed ? "All passing" : "Check failures", testsPassed ? "green" : "red")}
+        </div>
+        <div class="section-list">
+          ${state.testResults.map((test) => `
+            <div class="test-row ${test.passed ? "pass" : "fail"}">
+              <div class="test-row-head">
+                <strong>${htmlEscape(test.name)}</strong>
+                ${pill(test.passed ? "Passed" : "Failed", test.passed ? "green" : "red")}
+              </div>
+              ${!test.passed ? `<div class="value-line">Expected ${htmlEscape(test.expected)}, received ${htmlEscape(test.actual)}</div>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      `);
+    }
+
+    function render() {
+      document.querySelectorAll("[id^='tab-']").forEach((tab) => tab.classList.add("hidden-tab"));
+      document.getElementById(`tab-${state.activeTab}`).classList.remove("hidden-tab");
+
+      document.querySelectorAll("[data-tab-button]").forEach((button) => {
+        const active = button.dataset.tabButton === state.activeTab;
+        button.className = `button ${active ? "" : "outline"}`;
+      });
+
+      renderBuilder();
+      renderPreview();
+      renderJson();
+      renderTests();
+    }
+
+    function setTab(tab) {
+      state.activeTab = tab;
+      render();
+    }
+
+    function wireEvents() {
+      document.body.addEventListener("click", (event) => {
+        const tabButton = event.target.closest("[data-tab-button]");
+        if (tabButton) {
+          setTab(tabButton.dataset.tabButton);
+          return;
+        }
+
+        const addCondition = event.target.closest("[data-add-condition]");
+        if (addCondition) {
+          state.rule.conditions.items.push({ field: "country", operator: "equals", value: "Estonia" });
+          render();
+          return;
+        }
+
+        const removeCondition = event.target.closest("[data-remove-condition]");
+        if (removeCondition) {
+          const index = Number(removeCondition.dataset.removeCondition);
+          if (state.rule.conditions.items.length > 1) {
+            state.rule.conditions.items.splice(index, 1);
+            render();
+          }
+          return;
+        }
+
+        const addAction = event.target.closest("[data-add-action]");
+        if (addAction) {
+          const section = addAction.dataset.addAction;
+          state.rule[section].push({ type: "showField", field: "registryCode", value: "" });
+          render();
+          return;
+        }
+
+        const removeAction = event.target.closest("[data-remove-action]");
+        if (removeAction) {
+          const section = removeAction.dataset.removeAction;
+          const index = Number(removeAction.dataset.actionIndex);
+          state.rule[section].splice(index, 1);
+          render();
+        }
+      });
+
+      document.body.addEventListener("change", handleInputChange);
+      document.body.addEventListener("input", handleInputChange);
+    }
+
+    function handleInputChange(event) {
+      const element = event.target;
+
+      if (element.matches("[data-rule-prop]")) {
+        const prop = element.dataset.ruleProp;
+        if (prop === "enabled") {
+          state.rule.enabled = element.value === "enabled";
+        } else if (prop === "priority") {
+          state.rule.priority = element.value;
+        } else {
+          state.rule[prop] = element.value;
+        }
+        render();
+        return;
+      }
+
+      if (element.matches("[data-trigger-prop]")) {
+        const prop = element.dataset.triggerProp;
+        if (prop === "field") {
+          state.rule.trigger.fields = [element.value];
+        } else {
+          state.rule.trigger[prop] = element.value;
+        }
+        render();
+        return;
+      }
+
+      if (element.matches("[data-conditions-mode]")) {
+        state.rule.conditions.mode = element.value;
+        render();
+        return;
+      }
+
+      if (element.matches("[data-condition-index]")) {
+        const index = Number(element.dataset.conditionIndex);
+        const prop = element.dataset.conditionProp;
+        state.rule.conditions.items[index][prop] = element.value;
+        if (prop === "field") state.rule.conditions.items[index].value = "";
+        render();
+        return;
+      }
+
+      if (element.matches("[data-action-section]")) {
+        const section = element.dataset.actionSection;
+        const index = Number(element.dataset.actionIndex);
+        const prop = element.dataset.actionProp;
+        state.rule[section][index][prop] = element.value;
+        if (prop === "type") state.rule[section][index].value = "";
+        render();
+        return;
+      }
+
+      if (element.matches("[data-form-field]")) {
+        state.formValues[element.dataset.formField] = element.value;
+        render();
+      }
+    }
+
+    state.testResults = runRuleEngineTests();
+    wireEvents();
+    render();
+  </script>
+</body>
+</html>
