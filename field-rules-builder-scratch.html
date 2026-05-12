@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rule Builder — Block Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Neutrals — Tailwind stone/slate */
+    --bg: #FAFAF9;              /* stone-50 */
+    --bg-grid: #E7E5E4;         /* stone-200 */
+    --surface: #FFFFFF;
+    --surface-2: #F5F5F4;       /* stone-100 */
+    --border: #E7E5E4;          /* stone-200 */
+    --border-strong: #D6D3D1;   /* stone-300 */
+    --ink: #0F172A;             /* slate-900 */
+    --ink-2: #334155;           /* slate-700 */
+    --ink-3: #64748B;           /* slate-500 */
+    --ink-4: #94A3B8;           /* slate-400 */
+
+    /* Block colors — Tailwind pastels (300 bg, 500 border, 100 soft).
+       Text on blocks uses --ink (slate-900) for readability against pastel bg. */
+    --trigger-bg: #7DD3FC;       /* sky-300 */
+    --trigger-dark: #0EA5E9;     /* sky-500 */
+    --trigger-light: #E0F2FE;    /* sky-100 */
+    --trigger-text: #0C4A6E;     /* sky-900 — high-contrast text on pastel */
+
+    --cond-bg: #FCD34D;          /* amber-300 */
+    --cond-dark: #F59E0B;        /* amber-500 */
+    --cond-light: #FEF3C7;       /* amber-100 */
+    --cond-text: #78350F;        /* amber-900 */
+
+    --action-bg: #6EE7B7;        /* emerald-300 */
+    --action-dark: #10B981;      /* emerald-500 */
+    --action-light: #D1FAE5;     /* emerald-100 */
+    --action-text: #064E3B;      /* emerald-900 */
+
+    --value-bg: #FB7185;         /* rose-400 — error/required indicator */
+    --value-dark: #E11D48;       /* rose-600 */
+    --value-light: #FFE4E6;      /* rose-100 */
+    --value-text: #881337;       /* rose-900 */
+
+    --radius: 4px;
+    --radius-lg: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .brand-mark {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .brand-mark span {
+    border-radius: 2px;
+  }
+  .brand-mark span:nth-child(1) { background: var(--trigger-bg); }
+  .brand-mark span:nth-child(2) { background: var(--cond-bg); }
+  .brand-mark span:nth-child(3) { background: var(--value-bg); }
+  .brand-mark span:nth-child(4) { background: var(--action-bg); }
+
+  .breadcrumb {
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+
+  .breadcrumb-active { color: var(--ink); font-weight: 500; }
+
+  .topbar-spacer { flex: 1; }
+
+  .top-btn {
+    height: 32px;
+    padding: 0 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.12s;
+  }
+
+  .top-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--ink-3);
+  }
+
+  .top-btn.primary {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+
+  .top-btn.primary:hover {
+    background: #000;
+  }
+
+  .top-btn svg { width: 13px; height: 13px; }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    height: calc(100vh - 52px);
+  }
+
+  /* Palette sidebar */
+  .palette {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 16px 14px;
+  }
+
+  .palette-section {
+    margin-bottom: 22px;
+  }
+
+  .palette-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+
+  .palette-title-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .palette-block {
+    margin-bottom: 8px;
+    cursor: grab;
+    user-select: none;
+    position: relative;
+    transition: transform 0.1s;
+  }
+
+  .palette-block:hover { transform: translateX(2px); }
+  .palette-block:active { cursor: grabbing; }
+
+  .palette-block svg {
+    display: block;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+  }
+
+  /* Workspace */
+  .workspace-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);
+  }
+
+  .workspace {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    cursor: grab;
+  }
+
+  .workspace.panning { cursor: grabbing; }
+
+  .workspace-inner {
+    position: absolute;
+    transform-origin: 0 0;
+    width: 4000px;
+    height: 4000px;
+  }
+
+  .stack {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+  }
+
+  .stack.dragging { opacity: 0.9; z-index: 100; }
+  .stack.dragging svg { filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2)); }
+
+  /* The blocks themselves are SVGs with stroke for definition */
+  .block-svg {
+    display: block;
+    overflow: visible;
+  }
+
+  .block-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .block-label {
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Slot — embedded dropdowns and inputs styled as inline editors */
+  .slot {
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 3px;
+    padding: 0 6px;
+    height: 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    color: var(--ink);
+    font-weight: 500;
+    cursor: pointer;
+    position: absolute;
+    box-sizing: border-box;
+  }
+
+  .slot:hover {
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
+  }
+
+  .slot:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
+  }
+
+  select.slot {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath d='M1.5 3l2.5 2.5L6.5 3' stroke='%235A5448' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 18px;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px;
+    display: flex;
+    gap: 1px;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .tool-btn {
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: var(--ink-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+  }
+
+  .tool-btn:hover { background: var(--bg); color: var(--ink); }
+  .tool-btn svg { width: 14px; height: 14px; }
+
+  .tool-sep {
+    width: 1px;
+    background: var(--border);
+    margin: 3px 1px;
+  }
+
+  .zoom-display {
+    height: 30px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  /* Trash zone — appears when dragging */
+  .trash {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-3);
+    font-size: 12px;
+    z-index: 6;
+    transition: transform 0.22s ease, color 0.15s, border-color 0.15s, background 0.15s;
+    pointer-events: none;
+  }
+
+  .trash.visible {
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+
+  .trash.over {
+    background: var(--value-light);
+    border-color: var(--value-bg);
+    color: var(--value-dark);
+  }
+
+  .trash svg { width: 16px; height: 16px; }
+
+  /* Hint */
+  .hint {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: var(--ink-3);
+    z-index: 5;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* Test panel */
+  .test-panel {
+    position: fixed;
+    right: 0;
+    top: 52px;
+    bottom: 0;
+    width: 360px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -8px 0 24px rgba(0,0,0,0.08);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .test-panel.open { transform: translateX(0); }
+
+  .test-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .test-header h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .test-header-sub {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  .test-close {
+    background: none;
+    border: none;
+    color: var(--ink-3);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 4px;
+  }
+
+  .test-close:hover { color: var(--ink); background: var(--bg); }
+  .test-close svg { width: 14px; height: 14px; }
+
+  .test-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+
+  .test-empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--ink-3);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .test-field { margin-bottom: 12px; }
+  .test-field.hidden { display: none; }
+
+  .test-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .test-label.required::after {
+    content: '*';
+    color: var(--value-bg);
+    font-size: 12px;
+  }
+
+  .test-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    box-sizing: border-box;
+  }
+
+  select.test-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%238E8876' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 26px;
+    cursor: pointer;
+  }
+
+  .test-input:focus {
+    outline: none;
+    border-color: var(--trigger-bg);
+    box-shadow: 0 0 0 3px rgba(74,144,194,0.15);
+  }
+
+  .test-input.required-field {
+    border-color: var(--value-bg);
+  }
+
+  .test-error {
+    margin-top: 4px;
+    padding: 6px 10px;
+    background: var(--value-light);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--value-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .test-error svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+  .test-confirm {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--cond-light);
+    border: 1px solid var(--cond-bg);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .test-confirm svg { width: 14px; height: 14px; color: var(--cond-dark); flex-shrink: 0; margin-top: 1px; }
+
+  .test-log {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .test-log-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .log-count {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink-2);
+  }
+
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    border-left: 2px solid var(--ink-4);
+    display: flex;
+    gap: 6px;
+  }
+
+  .log-entry.trigger {
+    background: var(--trigger-light);
+    border-left-color: var(--trigger-bg);
+    color: var(--trigger-text);
+  }
+
+  .log-entry.cond-pass { border-left-color: var(--action-dark); color: var(--ink); }
+  .log-entry.cond-fail { border-left-color: var(--value-bg); color: var(--ink-3); }
+  .log-entry.fired { border-left-color: var(--action-dark); color: var(--action-text); background: var(--action-light); }
+  .log-entry.skipped { color: var(--ink-3); text-decoration: line-through; opacity: 0.65; }
+
+  .log-step { color: var(--ink-3); flex-shrink: 0; }
+
+  /* Empty state on the canvas */
+  .canvas-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--ink-3);
+    pointer-events: none;
+  }
+
+  .canvas-empty h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0 0 6px;
+    color: var(--ink-2);
+  }
+
+  .canvas-empty p { font-size: 12px; margin: 0; max-width: 280px; }
+
+  /* Snap preview indicator */
+  .snap-indicator {
+    position: absolute;
+    border: 2px dashed var(--ink);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+    Blocks
+  </div>
+  <div class="breadcrumb">Purchase order <span style="opacity:0.4;margin:0 4px;">/</span> <span class="breadcrumb-active">Rules</span></div>
+  <div class="topbar-spacer"></div>
+  <button class="top-btn" id="btnViewJson">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg>
+    JSON
+  </button>
+  <button class="top-btn" id="btnTest">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l8 5-8 5V3z"/></svg>
+    Test
+  </button>
+  <button class="top-btn primary">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l3 3 7-7"/></svg>
+    Save
+  </button>
+</div>
+
+<div class="main">
+
+  <!-- Palette -->
+  <aside class="palette" id="palette">
+    <div class="palette-section" data-category="trigger">
+      <div class="palette-title">
+        <span class="palette-title-swatch" style="background: var(--trigger-bg);"></span>
+        Triggers
+      </div>
+      <!-- palette items injected by JS -->
+    </div>
+    <div class="palette-section" data-category="cond">
+      <div class="palette-title">
+        <span class="palette-title-swatch" style="background: var(--cond-bg);"></span>
+        Conditions
+      </div>
+    </div>
+    <div class="palette-section" data-category="action">
+      <div class="palette-title">
+        <span class="palette-title-swatch" style="background: var(--action-bg);"></span>
+        Actions
+      </div>
+    </div>
+  </aside>
+
+  <!-- Workspace -->
+  <div class="workspace-wrap">
+    <div class="hint">
+      <span>Drag blocks from the palette · Stack them top to bottom · Drop on trash to delete</span>
+    </div>
+
+    <div class="canvas-empty" id="canvasEmpty" style="display:none;">
+      <h3>An empty canvas awaits</h3>
+      <p>Drag a trigger from the left to start building a rule. Conditions and actions snap underneath.</p>
+    </div>
+
+    <div class="workspace" id="workspace">
+      <div class="workspace-inner" id="workspaceInner">
+        <div id="stacks"></div>
+      </div>
+    </div>
+
+    <div class="trash" id="trash">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10M6 5V3h4v2M5 5l1 9h4l1-9"/></svg>
+      Drop to delete
+    </div>
+
+    <div class="toolbar">
+      <button class="tool-btn" id="btnZoomOut">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3M5 7h4"/></svg>
+      </button>
+      <div class="zoom-display" id="zoomDisplay">100%</div>
+      <button class="tool-btn" id="btnZoomIn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3M5 7h4M7 5v4"/></svg>
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="btnReset">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 119 3"/><path d="M3 5v3h3"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Test panel -->
+<div class="test-panel" id="testPanel">
+  <div class="test-header">
+    <div>
+      <h3>Test form</h3>
+      <div class="test-header-sub">Live evaluation</div>
+    </div>
+    <button class="test-close" id="btnCloseTest">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l10 10M13 3L3 13"/></svg>
+    </button>
+  </div>
+  <div class="test-body" id="testBody"></div>
+</div>
+
+<script>
+/* ============================================================
+   BLOCK GEOMETRY — with C-block (if/else) support
+   Each "stack" is a vertical list of blocks. A block can be:
+   - simple (trigger / cond / action): one row of height BLOCK_H,
+     with optional top-notch and optional bottom-bump
+   - composite (if_else): a C-shape with two inner arms (THEN, ELSE),
+     each holding its own child list of blocks
+
+   The silhouette of an if_else block is a single concave polygon:
+     header row → arm-1 opening on the right → divider row →
+     arm-2 opening on the right → footer → back up the left edge.
+
+   Children inside an arm behave like a top-level stack: they snap
+   together via notch/bump, can be dragged out, etc.
+============================================================ */
+
+const BLOCK_W = 280;
+const BLOCK_H = 44;
+const NOTCH_W = 36;
+const NOTCH_H = 6;
+const NOTCH_X = 16;
+const SNAP_THRESHOLD = 28;
+
+// C-block geometry
+const ARM_INSET = 18;      // left wall thickness inside the C
+const ARM_FOOTER = 12;     // small footer below the else arm
+const MIN_ARM_H = BLOCK_H; // arms expand to fit children; min 1 block tall
+
+const FIELDS = ['country','state','amount','doc_type','expires_in','vendor_type','tax_id','delete_flag','email','currency'];
+
+const FIELD_OPTIONS = {
+  vendor_type: ['external', 'internal', 'contractor', 'partner'],
+  country:     ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan'],
+  doc_type:    ['contract', 'invoice', 'purchase_order', 'receipt'],
+  currency:    ['USD', 'EUR', 'GBP', 'JPY'],
+  delete_flag: ['true', 'false'],
+};
+
+/* ----- Block definitions ----- */
+const BLOCK_DEFS = {
+  'trigger.change': {
+    category: 'trigger', shape: 'simple',
+    hasTop: false, hasBottom: true,
+    label: 'WHEN', template: 'field {field} changes',
+    slots: [{ key:'field', type:'select', options: () => FIELDS, default: 'country' }],
+  },
+  'trigger.load': {
+    category: 'trigger', shape: 'simple',
+    hasTop: false, hasBottom: true,
+    label: 'WHEN', template: 'form loads',
+    slots: [],
+  },
+
+  'cond.if_eq': {
+    category: 'cond', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'IF', template: '{field} = {value}',
+    slots: [
+      { key:'field', type:'select', options: () => FIELDS, default: 'country' },
+      { key:'value', type:'text-or-select', default: 'USA' },
+    ],
+  },
+  'cond.if_neq': {
+    category: 'cond', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'IF', template: '{field} ≠ {value}',
+    slots: [
+      { key:'field', type:'select', options: () => FIELDS, default: 'vendor_type' },
+      { key:'value', type:'text-or-select', default: 'internal' },
+    ],
+  },
+  'cond.if_gt': {
+    category: 'cond', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'IF', template: '{field} > {value}',
+    slots: [
+      { key:'field', type:'select', options: () => FIELDS, default: 'amount' },
+      { key:'value', type:'text', default: '10000' },
+    ],
+  },
+  'cond.if_empty': {
+    category: 'cond', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'IF', template: '{field} is empty',
+    slots: [{ key:'field', type:'select', options: () => FIELDS, default: 'tax_id' }],
+  },
+
+  // NEW: composite if/else block
+  'cond.if_else': {
+    category: 'cond', shape: 'c-block',
+    hasTop: true, hasBottom: true,
+    label: 'IF', template: '{field} = {value}',
+    dividerLabel: 'ELSE',
+    arms: ['then', 'else'],
+    slots: [
+      { key:'field', type:'select', options: () => FIELDS, default: 'vendor_type' },
+      { key:'value', type:'text-or-select', default: 'external' },
+    ],
+  },
+
+  'action.require': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'require {target}',
+    slots: [{ key:'target', type:'select', options: () => FIELDS, default: 'state' }],
+  },
+  'action.show': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'show {target}',
+    slots: [{ key:'target', type:'select', options: () => FIELDS, default: 'tax_id' }],
+  },
+  'action.hide': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'hide {target}',
+    slots: [{ key:'target', type:'select', options: () => FIELDS, default: 'tax_id' }],
+  },
+  'action.default': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'set {target} = {value}',
+    slots: [
+      { key:'target', type:'select', options: () => FIELDS, default: 'expires_in' },
+      { key:'value', type:'text', default: '30' },
+    ],
+  },
+  'action.error': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'show error: "{value}"',
+    slots: [{ key:'value', type:'text', default: 'Needs approval' }],
+  },
+  'action.confirm': {
+    category: 'action', shape: 'simple',
+    hasTop: true, hasBottom: true,
+    label: 'THEN', template: 'ask: "{value}"',
+    slots: [{ key:'value', type:'text', default: 'Are you sure?' }],
+  },
+};
+
+/* ============================================================
+   PATH GENERATORS
+============================================================ */
+// Simple block silhouette (notch top, bump bottom, both optional)
+function simplePath(hasTop, hasBottom, w = BLOCK_W, h = BLOCK_H) {
+  const r = 4;
+  let d = `M 0 ${r} Q 0 0 ${r} 0`;
+  if (hasTop) {
+    d += ` L ${NOTCH_X} 0 L ${NOTCH_X + 4} ${NOTCH_H} L ${NOTCH_X + NOTCH_W - 4} ${NOTCH_H} L ${NOTCH_X + NOTCH_W} 0 L ${w - r} 0`;
+  } else {
+    d += ` L ${w - r} 0`;
+  }
+  d += ` Q ${w} 0 ${w} ${r} L ${w} ${h - r} Q ${w} ${h} ${w - r} ${h}`;
+  if (hasBottom) {
+    d += ` L ${NOTCH_X + NOTCH_W} ${h} L ${NOTCH_X + NOTCH_W - 4} ${h + NOTCH_H} L ${NOTCH_X + 4} ${h + NOTCH_H} L ${NOTCH_X} ${h} L ${r} ${h}`;
+  } else {
+    d += ` L ${r} ${h}`;
+  }
+  d += ` Q 0 ${h} 0 ${h - r} Z`;
+  return d;
+}
+
+// C-block silhouette (header row + 2 arms + divider + footer).
+// The two arms are open on the RIGHT — the right edge of each arm is set back
+// by ARM_INSET from the outer width, creating the cutouts where children sit.
+function cBlockPath(hasTop, hasBottom, header_h, arm1_h, divider_h, arm2_h, footer_h, w = BLOCK_W) {
+  const r = 4;
+  const total_h = header_h + arm1_h + divider_h + arm2_h + footer_h;
+
+  let d = `M 0 ${r} Q 0 0 ${r} 0`;
+  if (hasTop) {
+    d += ` L ${NOTCH_X} 0 L ${NOTCH_X + 4} ${NOTCH_H} L ${NOTCH_X + NOTCH_W - 4} ${NOTCH_H} L ${NOTCH_X + NOTCH_W} 0 L ${w - r} 0`;
+  } else {
+    d += ` L ${w - r} 0`;
+  }
+  d += ` Q ${w} 0 ${w} ${r}`;
+  // Right edge of header
+  d += ` L ${w} ${header_h}`;
+  // Turn left into arm 1 opening
+  d += ` L ${ARM_INSET + NOTCH_X + NOTCH_W} ${header_h}`;
+  // Bump pointing DOWN into the arm (this is where the first child block's notch fits)
+  d += ` L ${ARM_INSET + NOTCH_X + NOTCH_W - 4} ${header_h + NOTCH_H}`;
+  d += ` L ${ARM_INSET + NOTCH_X + 4} ${header_h + NOTCH_H}`;
+  d += ` L ${ARM_INSET + NOTCH_X} ${header_h}`;
+  d += ` L ${ARM_INSET} ${header_h}`;
+  // Down the inner left wall (right edge of the outer left arm of the C)
+  d += ` L ${ARM_INSET} ${header_h + arm1_h}`;
+  // Turn right back out
+  d += ` L ${w} ${header_h + arm1_h}`;
+  // Right edge of divider
+  d += ` L ${w} ${header_h + arm1_h + divider_h}`;
+  // Turn left into arm 2 opening (bump again)
+  d += ` L ${ARM_INSET + NOTCH_X + NOTCH_W} ${header_h + arm1_h + divider_h}`;
+  d += ` L ${ARM_INSET + NOTCH_X + NOTCH_W - 4} ${header_h + arm1_h + divider_h + NOTCH_H}`;
+  d += ` L ${ARM_INSET + NOTCH_X + 4} ${header_h + arm1_h + divider_h + NOTCH_H}`;
+  d += ` L ${ARM_INSET + NOTCH_X} ${header_h + arm1_h + divider_h}`;
+  d += ` L ${ARM_INSET} ${header_h + arm1_h + divider_h}`;
+  // Down the inner left wall of arm 2
+  d += ` L ${ARM_INSET} ${header_h + arm1_h + divider_h + arm2_h}`;
+  // Turn right back out
+  d += ` L ${w} ${header_h + arm1_h + divider_h + arm2_h}`;
+  // Right edge of footer
+  d += ` L ${w} ${total_h - r}`;
+  d += ` Q ${w} ${total_h} ${w - r} ${total_h}`;
+  if (hasBottom) {
+    d += ` L ${NOTCH_X + NOTCH_W} ${total_h} L ${NOTCH_X + NOTCH_W - 4} ${total_h + NOTCH_H} L ${NOTCH_X + 4} ${total_h + NOTCH_H} L ${NOTCH_X} ${total_h} L ${r} ${total_h}`;
+  } else {
+    d += ` L ${r} ${total_h}`;
+  }
+  d += ` Q 0 ${total_h} 0 ${total_h - r} Z`;
+  return d;
+}
+
+/* ============================================================
+   HEIGHT CALCULATION
+   How tall is a block (or a stack of blocks)?
+   For simple blocks: BLOCK_H.
+   For c-blocks: header + max(arm1_children_h, MIN_ARM_H) + divider + max(arm2_children_h, MIN_ARM_H) + footer
+============================================================ */
+function blockHeight(block) {
+  const def = BLOCK_DEFS[block.defId];
+  if (!def) return BLOCK_H;
+  if (def.shape === 'c-block') {
+    const armH = (arm) => {
+      const kids = block.children && block.children[arm] ? block.children[arm] : [];
+      const sum = kids.reduce((s, b) => s + blockHeight(b), 0);
+      return Math.max(MIN_ARM_H, sum);
+    };
+    return BLOCK_H + armH('then') + BLOCK_H + armH('else') + ARM_FOOTER;
+  }
+  return BLOCK_H;
+}
+
+function stackHeight(blocks) {
+  return blocks.reduce((s, b) => s + blockHeight(b), 0);
+}
+
+/* ============================================================
+   STATE
+============================================================ */
+let stacks = []; // each stack = { id, x, y, blocks: [...] }
+let nextStackId = 1;
+let nextBlockId = 1;
+let pan = { x: 40, y: 40 };
+let zoom = 1;
+
+/* Seed: showcases the new if/else block */
+function seed() {
+  stacks = [
+    {
+      id: nextStackId++, x: 40, y: 30,
+      blocks: [
+        { id: nextBlockId++, defId: 'trigger.change', slotValues: { field: 'vendor_type' } },
+        {
+          id: nextBlockId++, defId: 'cond.if_else',
+          slotValues: { field: 'vendor_type', value: 'external' },
+          children: {
+            then: [
+              { id: nextBlockId++, defId: 'action.show', slotValues: { target: 'tax_id' } },
+              { id: nextBlockId++, defId: 'action.require', slotValues: { target: 'tax_id' } },
+            ],
+            else: [
+              { id: nextBlockId++, defId: 'action.hide', slotValues: { target: 'tax_id' } },
+            ],
+          }
+        },
+      ]
+    },
+    {
+      id: nextStackId++, x: 380, y: 30,
+      blocks: [
+        { id: nextBlockId++, defId: 'trigger.change', slotValues: { field: 'amount' } },
+        { id: nextBlockId++, defId: 'cond.if_gt', slotValues: { field: 'amount', value: '10000' } },
+        { id: nextBlockId++, defId: 'action.error', slotValues: { value: 'Needs manager approval' } },
+      ]
+    },
+    {
+      id: nextStackId++, x: 40, y: 380,
+      blocks: [
+        { id: nextBlockId++, defId: 'trigger.load', slotValues: {} },
+        { id: nextBlockId++, defId: 'cond.if_eq', slotValues: { field: 'doc_type', value: 'contract' } },
+        { id: nextBlockId++, defId: 'action.default', slotValues: { target: 'expires_in', value: '30' } },
+      ]
+    },
+  ];
+}
+seed();
+
+/* ============================================================
+   PALETTE
+============================================================ */
+function renderPalette() {
+  const sections = {
+    trigger: document.querySelector('.palette-section[data-category="trigger"]'),
+    cond: document.querySelector('.palette-section[data-category="cond"]'),
+    action: document.querySelector('.palette-section[data-category="action"]'),
+  };
+
+  Object.entries(BLOCK_DEFS).forEach(([defId, def]) => {
+    const section = sections[def.category];
+    if (!section) return;
+    const item = document.createElement('div');
+    item.className = 'palette-block';
+    item.dataset.defId = defId;
+    item.draggable = true;
+
+    const w = 192;
+    const h = 36;
+    const bg = `var(--${def.category}-bg)`;
+    const dark = `var(--${def.category}-dark)`;
+
+    let svgInner;
+    let textColor = `var(--${def.category}-text)`;
+    // Same label-width formula used on canvas blocks so palette previews match.
+    // The +10 is the left padding before the label itself.
+    const labelW = 10 + def.label.length * 6.5 + 14;
+    if (def.shape === 'c-block') {
+      // Preview proportions echo the regular IF block: same header/divider height (h)
+      // as a simple block, and arms tall enough to suggest a block could sit there.
+      const pH = h;            // header same height as a simple block
+      const pA = 20;           // arm slot — reads as a block-shaped opening
+      const pD = h;            // divider matches header
+      const pF = 8;            // small footer
+      const totalH = pH + pA + pD + pA + pF;
+      const path = cBlockPath(def.hasTop, def.hasBottom, pH, pA, pD, pA, pF, w);
+      svgInner = `
+        <svg class="block-svg" width="${w}" height="${totalH + NOTCH_H + 2}" viewBox="0 0 ${w} ${totalH + NOTCH_H + 2}">
+          <path d="${path}" fill="${bg}" stroke="${dark}" stroke-width="1" />
+          <text class="block-label" x="10" y="${def.hasTop ? 18 : 14}" fill="${textColor}">${def.label}</text>
+          <text class="block-text" x="${labelW}" y="${def.hasTop ? 18 : 14}" fill="${textColor}">if / else</text>
+          <text class="block-label" x="10" y="${pH + pA + 18}" fill="${textColor}">${def.dividerLabel}</text>
+        </svg>
+      `;
+    } else {
+      const path = simplePath(def.hasTop, def.hasBottom, w, h);
+      const preview = def.template.replace(/\{[^}]+\}/g, '___');
+      svgInner = `
+        <svg class="block-svg" width="${w}" height="${h + NOTCH_H + 2}" viewBox="0 0 ${w} ${h + NOTCH_H + 2}">
+          <path d="${path}" fill="${bg}" stroke="${dark}" stroke-width="1" />
+          <text class="block-label" x="10" y="${def.hasTop ? 18 : 14}" fill="${textColor}">${def.label}</text>
+          <text class="block-text" x="${labelW}" y="${def.hasTop ? 18 : 14}" fill="${textColor}">${preview}</text>
+        </svg>
+      `;
+    }
+    item.innerHTML = svgInner;
+    section.appendChild(item);
+
+    item.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ defId, fromPalette: true }));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+  });
+}
+renderPalette();
+
+/* ============================================================
+   RENDERING — recursive for c-blocks
+============================================================ */
+const stacksEl = document.getElementById('stacks');
+const workspace = document.getElementById('workspace');
+const workspaceInner = document.getElementById('workspaceInner');
+
+function renderStacks() {
+  stacksEl.innerHTML = '';
+  stacks.forEach(stack => renderStack(stack));
+  document.getElementById('canvasEmpty').style.display = stacks.length === 0 ? 'block' : 'none';
+}
+
+function renderStack(stack) {
+  const wrap = document.createElement('div');
+  wrap.className = 'stack';
+  wrap.style.left = stack.x + 'px';
+  wrap.style.top = stack.y + 'px';
+  wrap.dataset.stackId = stack.id;
+
+  // Recursively render blocks, accumulating y offsets
+  renderBlockList(wrap, stack.blocks, 0, /*path*/ []);
+
+  stacksEl.appendChild(wrap);
+}
+
+// Render a list of blocks vertically into `container`, starting at `yStart`.
+// `path` is the breadcrumb to where these blocks live: e.g.
+//   [] = top-level stack
+//   [{blockId: 5, arm: 'then'}] = inside block 5's THEN arm
+// `width` is the available pixel width for blocks in this list (so nested blocks shrink).
+function renderBlockList(container, blocks, yStart, path, width = BLOCK_W) {
+  let y = yStart;
+  blocks.forEach((block, idx) => {
+    const def = BLOCK_DEFS[block.defId];
+    if (!def) return;
+    const blockH = blockHeight(block);
+
+    const blockEl = document.createElement('div');
+    blockEl.className = 'block';
+    blockEl.style.position = 'absolute';
+    blockEl.style.left = '0';
+    blockEl.style.top = y + 'px';
+    blockEl.dataset.blockId = block.id;
+    blockEl.dataset.blockIdx = idx;
+    blockEl.dataset.path = JSON.stringify(path);
+
+    if (def.shape === 'c-block') {
+      renderCBlockInto(blockEl, block, def, width);
+    } else {
+      renderSimpleBlockInto(blockEl, block, def, width);
+    }
+    container.appendChild(blockEl);
+    y += blockH;
+  });
+}
+
+function renderSimpleBlockInto(blockEl, block, def, width = BLOCK_W) {
+  const bg = `var(--${def.category}-bg)`;
+  const dark = `var(--${def.category}-dark)`;
+  const textColor = `var(--${def.category}-text)`;
+  const path = simplePath(def.hasTop, def.hasBottom, width);
+  const totalH = BLOCK_H + NOTCH_H + 2;
+  const labelText = def.label;
+  const labelWidth = labelText.length * 6.5 + 14;
+
+  blockEl.innerHTML = `
+    <svg class="block-svg" width="${width + 2}" height="${totalH}" viewBox="0 0 ${width + 2} ${totalH}">
+      <path d="${path}" fill="${bg}" stroke="${dark}" stroke-width="1" />
+      <text class="block-label" x="10" y="${def.hasTop ? 19 : 15}" fill="${textColor}">${labelText}</text>
+    </svg>
+    <div class="block-content" style="position:absolute; left:${labelWidth + 4}px; top:${def.hasTop ? 11 : 7}px; right:14px; height:26px; display:flex; align-items:center; gap:4px; color:${textColor}; font-size:12.5px; font-weight:500; pointer-events:none;"></div>
+  `;
+  buildBlockContent(blockEl.querySelector('.block-content'), block, def);
+}
+
+function renderCBlockInto(blockEl, block, def, width = BLOCK_W) {
+  const bg = `var(--${def.category}-bg)`;
+  const dark = `var(--${def.category}-dark)`;
+  const thenKids = (block.children && block.children.then) || [];
+  const elseKids = (block.children && block.children.else) || [];
+  const arm1_h = Math.max(MIN_ARM_H, stackHeight(thenKids));
+  const arm2_h = Math.max(MIN_ARM_H, stackHeight(elseKids));
+  const header_h = BLOCK_H;
+  const divider_h = BLOCK_H;
+  const footer_h = ARM_FOOTER;
+  const total_h = header_h + arm1_h + divider_h + arm2_h + footer_h;
+
+  const path = cBlockPath(def.hasTop, def.hasBottom, header_h, arm1_h, divider_h, arm2_h, footer_h, width);
+  const svgH = total_h + NOTCH_H + 2;
+  const labelText = def.label;
+  const labelWidth = labelText.length * 6.5 + 14;
+
+  // Children inside an arm are narrower than the C-block (shrink-to-fit).
+  // The arm's interior width is the C-block's width minus the left wall (ARM_INSET).
+  const armChildWidth = width - ARM_INSET;
+  const textColor = `var(--${def.category}-text)`;
+
+  blockEl.innerHTML = `
+    <svg class="block-svg" width="${width + 2}" height="${svgH}" viewBox="0 0 ${width + 2} ${svgH}">
+      <path d="${path}" fill="${bg}" stroke="${dark}" stroke-width="1" />
+      <text class="block-label" x="10" y="${def.hasTop ? 19 : 15}" fill="${textColor}">${labelText}</text>
+      <text class="block-label" x="10" y="${header_h + arm1_h + 18}" fill="${textColor}">${def.dividerLabel}</text>
+    </svg>
+    <div class="block-content header-content" style="position:absolute; left:${labelWidth + 4}px; top:${def.hasTop ? 11 : 7}px; right:14px; height:26px; display:flex; align-items:center; gap:4px; color:${textColor}; font-size:12.5px; font-weight:500; pointer-events:none;"></div>
+    <div class="arm-children then-arm" data-arm="then" style="position:absolute; left:${ARM_INSET}px; top:${header_h}px; width:${armChildWidth}px; height:${arm1_h}px;"></div>
+    <div class="arm-children else-arm" data-arm="else" style="position:absolute; left:${ARM_INSET}px; top:${header_h + arm1_h + divider_h}px; width:${armChildWidth}px; height:${arm2_h}px;"></div>
+  `;
+  buildBlockContent(blockEl.querySelector('.header-content'), block, def);
+
+  // Render children inside each arm. Path breadcrumb extends with this block's id + arm.
+  // Children are rendered at the narrower armChildWidth.
+  const currentPath = JSON.parse(blockEl.dataset.path);
+  const thenArm = blockEl.querySelector('.then-arm');
+  const elseArm = blockEl.querySelector('.else-arm');
+  renderBlockList(thenArm, thenKids, 0, [...currentPath, { blockId: block.id, arm: 'then' }], armChildWidth);
+  renderBlockList(elseArm, elseKids, 0, [...currentPath, { blockId: block.id, arm: 'else' }], armChildWidth);
+}
+
+function buildBlockContent(container, block, def) {
+  const parts = def.template.split(/(\{[^}]+\})/);
+  parts.forEach(part => {
+    if (part.startsWith('{') && part.endsWith('}')) {
+      const key = part.slice(1, -1);
+      const slot = def.slots.find(s => s.key === key);
+      if (!slot) return;
+      const value = block.slotValues[key] ?? slot.default ?? '';
+      const ctrl = makeSlotControl(slot, value, block);
+      container.appendChild(ctrl);
+    } else if (part.trim()) {
+      const span = document.createElement('span');
+      span.style.pointerEvents = 'none';
+      span.textContent = part;
+      container.appendChild(span);
+    }
+  });
+}
+
+function makeSlotControl(slot, value, block) {
+  let el;
+  if (slot.type === 'select') {
+    el = document.createElement('select');
+    el.className = 'slot';
+    slot.options().forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      if (opt === value) o.selected = true;
+      el.appendChild(o);
+    });
+  } else if (slot.type === 'text-or-select') {
+    const field = block.slotValues.field;
+    const opts = FIELD_OPTIONS[field];
+    if (opts && opts.length) {
+      el = document.createElement('select');
+      el.className = 'slot';
+      opts.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        if (opt === value) o.selected = true;
+        el.appendChild(o);
+      });
+      if (value && !opts.includes(value)) {
+        const o = document.createElement('option');
+        o.value = value; o.textContent = value; o.selected = true;
+        el.insertBefore(o, el.firstChild);
+      }
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+      el.className = 'slot';
+      el.value = value;
+    }
+  } else {
+    el = document.createElement('input');
+    el.type = 'text';
+    el.className = 'slot';
+    el.value = value;
+    const guess = Math.max(60, Math.min(160, (String(value).length + 2) * 7));
+    el.style.minWidth = guess + 'px';
+  }
+  el.dataset.slotKey = slot.key;
+  el.style.position = 'relative';
+  el.style.pointerEvents = 'auto';
+  if (el.tagName === 'SELECT') {
+    const longest = Math.max(...Array.from(el.options).map(o => o.textContent.length), 4);
+    el.style.minWidth = (longest * 7 + 24) + 'px';
+  }
+  el.addEventListener('change', () => {
+    block.slotValues[slot.key] = el.value;
+    if (slot.key === 'field') renderStacks();
+  });
+  el.addEventListener('input', () => {
+    if (el.tagName === 'INPUT') block.slotValues[slot.key] = el.value;
+  });
+  el.addEventListener('mousedown', e => e.stopPropagation());
+  return el;
+}
+
+renderStacks();
+
+/* ============================================================
+   PAN + ZOOM
+============================================================ */
+function applyTransform() {
+  workspaceInner.style.transform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
+  document.getElementById('zoomDisplay').textContent = Math.round(zoom * 100) + '%';
+}
+applyTransform();
+
+let isPanning = false, panStart = null;
+let spaceDown = false;
+
+workspace.addEventListener('mousedown', (e) => {
+  const isBackground = e.target === workspace || e.target === workspaceInner || e.target === stacksEl;
+  if (isBackground || spaceDown) {
+    isPanning = true;
+    panStart = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+    workspace.classList.add('panning');
+    e.preventDefault();
+  }
+});
+document.addEventListener('mousemove', (e) => {
+  if (isPanning) { pan.x = e.clientX - panStart.x; pan.y = e.clientY - panStart.y; applyTransform(); }
+});
+document.addEventListener('mouseup', () => {
+  if (isPanning) { isPanning = false; workspace.classList.remove('panning'); }
+});
+workspace.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.1 : 0.1;
+  const newZoom = Math.max(0.4, Math.min(1.6, zoom + delta));
+  const rect = workspace.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const scale = newZoom / zoom;
+  pan.x = cx - (cx - pan.x) * scale;
+  pan.y = cy - (cy - pan.y) * scale;
+  zoom = newZoom;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('btnZoomIn').addEventListener('click', () => { zoom = Math.min(1.6, zoom + 0.1); applyTransform(); });
+document.getElementById('btnZoomOut').addEventListener('click', () => { zoom = Math.max(0.4, zoom - 0.1); applyTransform(); });
+document.getElementById('btnReset').addEventListener('click', () => { zoom = 1; pan = { x: 40, y: 40 }; applyTransform(); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+    spaceDown = true;
+    workspace.style.cursor = 'grab';
+  }
+  if (e.code === 'Escape') document.getElementById('testPanel').classList.remove('open');
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') { spaceDown = false; workspace.style.cursor = ''; }
+});
+
+/* ============================================================
+   PATH HELPERS — traverse the nested block tree
+============================================================ */
+// Given a stack and a path breadcrumb [{blockId, arm}, ...] plus an index,
+// return the parent array of blocks at that location.
+function resolveBlockList(stack, path) {
+  let list = stack.blocks;
+  for (const step of path) {
+    const parent = list.find(b => b.id === step.blockId);
+    if (!parent || !parent.children) return null;
+    list = parent.children[step.arm];
+    if (!Array.isArray(list)) return null;
+  }
+  return list;
+}
+
+// Compute the absolute world-coordinates (relative to stacksEl, before pan/zoom)
+// of the top-left of a position inside a stack, given a path and a y offset
+// within that arm's list of children.
+function absolutePosition(stack, path, localY) {
+  let x = stack.x;
+  let y = stack.y;
+  let list = stack.blocks;
+
+  for (const step of path) {
+    // accumulate y within `list` up to the block we descend into
+    for (const b of list) {
+      if (b.id === step.blockId) {
+        // we descend into this block's arm.
+        // The arm starts at the header's bottom; children's notches overlap the bump.
+        x += ARM_INSET;
+        if (step.arm === 'then') {
+          y += BLOCK_H;
+        } else {
+          // else arm starts after header + arm1 + divider
+          const arm1Kids = (b.children && b.children.then) || [];
+          const arm1_h = Math.max(MIN_ARM_H, stackHeight(arm1Kids));
+          y += BLOCK_H + arm1_h + BLOCK_H;
+        }
+        list = (b.children && b.children[step.arm]) || [];
+        break;
+      } else {
+        y += blockHeight(b);
+      }
+    }
+  }
+  return { x, y: y + localY };
+}
+
+/* ============================================================
+   DRAG STACKS AND BLOCKS
+   Mousedown on a block:
+     - If it's the top-level first block of a stack, move the whole stack.
+     - Otherwise, detach it (and its trailing siblings in the same arm) into
+       a new top-level stack.
+============================================================ */
+let dragState = null;
+
+stacksEl.addEventListener('mousedown', (e) => {
+  const blockEl = e.target.closest('.block');
+  if (!blockEl) return;
+  if (e.target.closest('.slot')) return;
+
+  const stackEl = blockEl.closest('.stack');
+  const stackId = +stackEl.dataset.stackId;
+  const stack = stacks.find(s => s.id === stackId);
+  if (!stack) return;
+
+  const path = JSON.parse(blockEl.dataset.path);
+  const blockIdx = +blockEl.dataset.blockIdx;
+  const list = resolveBlockList(stack, path);
+  if (!list) return;
+
+  // Compute absolute pixel position of the block we're grabbing
+  let blockTopY = 0;
+  for (let i = 0; i < blockIdx; i++) blockTopY += blockHeight(list[i]);
+  const abs = absolutePosition(stack, path, blockTopY);
+
+  const wsRect = workspace.getBoundingClientRect();
+  const px = (e.clientX - wsRect.left - pan.x) / zoom;
+  const py = (e.clientY - wsRect.top - pan.y) / zoom;
+
+  let movingStack;
+  if (path.length === 0 && blockIdx === 0) {
+    movingStack = stack;
+  } else {
+    // Detach this block + everything below it in the same list
+    const detached = list.splice(blockIdx);
+    movingStack = {
+      id: nextStackId++,
+      x: abs.x,
+      y: abs.y,
+      blocks: detached
+    };
+    stacks.push(movingStack);
+    renderStacks();
+  }
+
+  dragState = {
+    stack: movingStack,
+    offsetX: px - movingStack.x,
+    offsetY: py - movingStack.y,
+  };
+
+  document.getElementById('trash').classList.add('visible');
+  const el = stacksEl.querySelector(`.stack[data-stack-id="${movingStack.id}"]`);
+  if (el) el.classList.add('dragging');
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!dragState) return;
+  const wsRect = workspace.getBoundingClientRect();
+  const px = (e.clientX - wsRect.left - pan.x) / zoom;
+  const py = (e.clientY - wsRect.top - pan.y) / zoom;
+  dragState.stack.x = px - dragState.offsetX;
+  dragState.stack.y = py - dragState.offsetY;
+  const el = stacksEl.querySelector(`.stack[data-stack-id="${dragState.stack.id}"]`);
+  if (el) { el.style.left = dragState.stack.x + 'px'; el.style.top = dragState.stack.y + 'px'; }
+  const snap = findSnapTarget(dragState.stack);
+  highlightSnap(snap);
+  checkTrashHover(e);
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!dragState) return;
+  const overTrash = checkTrashHover(e);
+  if (overTrash) {
+    stacks = stacks.filter(s => s.id !== dragState.stack.id);
+  } else {
+    const snap = findSnapTarget(dragState.stack);
+    if (snap) {
+      // Insert the dragged blocks at the bottom of the target list
+      snap.list.push(...dragState.stack.blocks);
+      stacks = stacks.filter(s => s.id !== dragState.stack.id);
+    }
+  }
+  document.getElementById('trash').classList.remove('visible', 'over');
+  clearSnapHighlight();
+  dragState = null;
+  renderStacks();
+});
+
+function checkTrashHover(e) {
+  const trash = document.getElementById('trash');
+  if (!trash.classList.contains('visible')) return false;
+  const r = trash.getBoundingClientRect();
+  const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  trash.classList.toggle('over', over);
+  return over;
+}
+
+/* ============================================================
+   SNAP DETECTION — including inner arms
+   Snap targets are bumps (down-pointing tabs):
+   - bottom of any stack
+   - bottom of the last block in any THEN arm
+   - bottom of the last block in any ELSE arm
+   - top of an empty arm (right under the header / divider's notch-bump)
+============================================================ */
+function findSnapTarget(draggedStack) {
+  const firstDef = BLOCK_DEFS[draggedStack.blocks[0].defId];
+  if (!firstDef.hasTop) return null; // triggers don't snap
+
+  let best = null;
+  let bestDist = SNAP_THRESHOLD;
+
+  // Helper: register a candidate target (where our top-left notch should align)
+  function tryTarget(targetX, targetY, list) {
+    const ourX = draggedStack.x + NOTCH_X;
+    const ourY = draggedStack.y;
+    const dx = Math.abs(targetX + NOTCH_X - ourX);
+    const dy = Math.abs(targetY - ourY);
+    if (dx < SNAP_THRESHOLD && dy < SNAP_THRESHOLD) {
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = { list, snapX: targetX, snapY: targetY };
+      }
+    }
+  }
+
+  // Walk every list in every stack, recursing into c-block arms.
+  function walkList(list, baseX, baseY) {
+    if (list === draggedStack.blocks) return; // don't snap to ourselves
+
+    // The bottom of this list (where a new block would attach to extend it)
+    const listH = stackHeight(list);
+    tryTarget(baseX, baseY + listH, list);
+
+    // Recurse into each c-block's arms
+    let y = baseY;
+    list.forEach(b => {
+      const def = BLOCK_DEFS[b.defId];
+      if (def && def.shape === 'c-block') {
+        const thenKids = (b.children && b.children.then) || [];
+        const elseKids = (b.children && b.children.else) || [];
+        const arm1_h = Math.max(MIN_ARM_H, stackHeight(thenKids));
+        // THEN arm starts at y + BLOCK_H, indented by ARM_INSET
+        walkList(thenKids, baseX + ARM_INSET, y + BLOCK_H);
+        // ELSE arm starts at y + BLOCK_H + arm1_h + BLOCK_H (header + arm1 + divider)
+        walkList(elseKids, baseX + ARM_INSET, y + BLOCK_H + arm1_h + BLOCK_H);
+        // ensure the c-block itself can be snapped onto (its bottom)
+        // (handled by walking the parent list's bottom above)
+      }
+      y += blockHeight(b);
+    });
+  }
+
+  stacks.forEach(s => walkList(s.blocks, s.x, s.y));
+
+  return best;
+}
+
+function highlightSnap(target) {
+  clearSnapHighlight();
+  if (!target) return;
+  const indicator = document.createElement('div');
+  indicator.className = 'snap-indicator';
+  indicator.style.left = target.snapX + 'px';
+  indicator.style.top = target.snapY + 'px';
+  indicator.style.width = BLOCK_W + 'px';
+  indicator.style.height = stackHeight(dragState.stack.blocks) + 'px';
+  workspaceInner.appendChild(indicator);
+}
+
+function clearSnapHighlight() {
+  workspaceInner.querySelectorAll('.snap-indicator').forEach(e => e.remove());
+}
+
+/* ============================================================
+   DROP FROM PALETTE
+============================================================ */
+workspace.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+workspace.addEventListener('drop', (e) => {
+  e.preventDefault();
+  try {
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    if (!data.fromPalette) return;
+    const def = BLOCK_DEFS[data.defId];
+    if (!def) return;
+
+    const wsRect = workspace.getBoundingClientRect();
+    const px = (e.clientX - wsRect.left - pan.x) / zoom;
+    const py = (e.clientY - wsRect.top - pan.y) / zoom;
+
+    const slotValues = {};
+    def.slots.forEach(s => slotValues[s.key] = s.default);
+    const newBlock = { id: nextBlockId++, defId: data.defId, slotValues };
+    if (def.shape === 'c-block') {
+      newBlock.children = { then: [], else: [] };
+    }
+    const newStack = { id: nextStackId++, x: px - 60, y: py - 18, blocks: [newBlock] };
+    stacks.push(newStack);
+
+    const snap = findSnapTarget(newStack);
+    if (snap) {
+      snap.list.push(...newStack.blocks);
+      stacks = stacks.filter(s => s.id !== newStack.id);
+    }
+    renderStacks();
+  } catch (err) {}
+});
+
+/* ============================================================
+   JSON GENERATION
+============================================================ */
+function blockToJson(b) {
+  const def = BLOCK_DEFS[b.defId];
+  if (!def) return null;
+  const out = { type: b.defId.split('.')[1], ...b.slotValues };
+  if (def.shape === 'c-block') {
+    out.then = ((b.children && b.children.then) || []).map(blockToJson).filter(Boolean);
+    out.else = ((b.children && b.children.else) || []).map(blockToJson).filter(Boolean);
+  }
+  return out;
+}
+
+function generateJson() {
+  return stacks.map(stack => ({
+    trigger: blockToJson(stack.blocks.find(b => BLOCK_DEFS[b.defId].category === 'trigger')),
+    body: stack.blocks
+      .filter(b => BLOCK_DEFS[b.defId].category !== 'trigger')
+      .map(blockToJson)
+      .filter(Boolean),
+  }));
+}
+
+document.getElementById('btnViewJson').addEventListener('click', () => {
+  alert(JSON.stringify(generateJson(), null, 2));
+});
+
+/* ============================================================
+   EVALUATION — supports if/else branching
+============================================================ */
+function evalSimpleCondition(c, values) {
+  const v = values[c.slotValues.field] ?? '';
+  const expected = c.slotValues.value;
+  switch (c.defId) {
+    case 'cond.if_eq': return String(v) === String(expected);
+    case 'cond.if_neq': return String(v) !== String(expected);
+    case 'cond.if_gt': return parseFloat(v) > parseFloat(expected);
+    case 'cond.if_empty': return v === '' || v == null;
+    case 'cond.if_else': return String(v) === String(expected);
+    default: return false;
+  }
+}
+
+function applyAction(a, fieldState) {
+  function ensure(f) {
+    if (!fieldState[f]) fieldState[f] = { required:false, hidden:false, default:null, error:null, confirm:null };
+    return fieldState[f];
+  }
+  const v = a.slotValues;
+  switch (a.defId) {
+    case 'action.require': if (v.target) ensure(v.target).required = true; break;
+    case 'action.show': if (v.target) ensure(v.target).hidden = false; break;
+    case 'action.hide': if (v.target) ensure(v.target).hidden = true; break;
+    case 'action.default': if (v.target) ensure(v.target).default = v.value; break;
+    case 'action.error': ensure('__form__').error = v.value; break;
+    case 'action.confirm': ensure('__form__').confirm = v.value; break;
+  }
+}
+
+function actionLabel(a) {
+  const v = a.slotValues;
+  switch (a.defId) {
+    case 'action.require': return `require ${v.target}`;
+    case 'action.show': return `show ${v.target}`;
+    case 'action.hide': return `hide ${v.target}`;
+    case 'action.default': return `default ${v.target} = ${v.value}`;
+    case 'action.error': return `error: "${v.value}"`;
+    case 'action.confirm': return `confirm: "${v.value}"`;
+  }
+  return '';
+}
+
+function condLabel(c) {
+  const v = c.slotValues;
+  switch (c.defId) {
+    case 'cond.if_eq': return `${v.field} == ${v.value}`;
+    case 'cond.if_neq': return `${v.field} != ${v.value}`;
+    case 'cond.if_gt': return `${v.field} > ${v.value}`;
+    case 'cond.if_empty': return `${v.field} is empty`;
+    case 'cond.if_else': return `${v.field} == ${v.value}`;
+  }
+  return '';
+}
+
+// Run a list of blocks. `gateOpen` is whether prior conditions in this list
+// all passed; if it's false, actions are logged as skipped.
+function runBlockList(blocks, values, fieldState, log, gateOpen) {
+  blocks.forEach(b => {
+    const def = BLOCK_DEFS[b.defId];
+    if (!def) return;
+
+    if (def.shape === 'c-block') {
+      // Always evaluate the condition; then branch
+      if (!gateOpen) {
+        // Still log the if/else as skipped
+        log.push({ type:'skipped', text: `if/else ${condLabel(b)} (skipped)` });
+        return;
+      }
+      const result = evalSimpleCondition(b, values);
+      log.push({ type: result ? 'cond-pass' : 'cond-fail', text: condLabel(b) });
+      const branch = result ? 'then' : 'else';
+      const kids = (b.children && b.children[branch]) || [];
+      log.push({ type:'branch', text: `→ ${branch.toUpperCase()} branch` });
+      runBlockList(kids, values, fieldState, log, true);
+      // Also log the un-taken branch as skipped (for visibility)
+      const otherBranch = result ? 'else' : 'then';
+      const otherKids = (b.children && b.children[otherBranch]) || [];
+      if (otherKids.length > 0) {
+        log.push({ type:'branch-skipped', text: `${otherBranch.toUpperCase()} not taken` });
+        otherKids.forEach(k => {
+          const kdef = BLOCK_DEFS[k.defId];
+          if (!kdef) return;
+          if (kdef.category === 'action') {
+            log.push({ type:'skipped', text: actionLabel(k) });
+          }
+        });
+      }
+      return;
+    }
+
+    if (def.category === 'cond') {
+      if (!gateOpen) {
+        log.push({ type:'skipped', text: condLabel(b) + ' (skipped)' });
+        return;
+      }
+      const pass = evalSimpleCondition(b, values);
+      log.push({ type: pass ? 'cond-pass' : 'cond-fail', text: condLabel(b) });
+      if (!pass) gateOpen = false;
+      return;
+    }
+
+    if (def.category === 'action') {
+      if (gateOpen) {
+        applyAction(b, fieldState);
+        log.push({ type:'fired', text: actionLabel(b) });
+      } else {
+        log.push({ type:'skipped', text: actionLabel(b) });
+      }
+    }
+  });
+}
+
+function runStacks(values) {
+  const fieldState = {};
+  const logs = [];
+
+  stacks.forEach(stack => {
+    const trigger = stack.blocks.find(b => BLOCK_DEFS[b.defId] && BLOCK_DEFS[b.defId].category === 'trigger');
+    if (!trigger) return;
+
+    let fires = false;
+    if (trigger.defId === 'trigger.load') fires = true;
+    if (trigger.defId === 'trigger.change') {
+      const f = trigger.slotValues.field;
+      fires = f && values[f] !== undefined && values[f] !== '';
+    }
+    if (!fires) return;
+
+    const log = [];
+    log.push({ type:'trigger', text: trigger.defId === 'trigger.load' ? 'on form load' : `on change: ${trigger.slotValues.field}` });
+
+    const body = stack.blocks.filter(b => BLOCK_DEFS[b.defId] && BLOCK_DEFS[b.defId].category !== 'trigger');
+    runBlockList(body, values, fieldState, log, true);
+    logs.push(log);
+  });
+
+  return { fieldState, logs };
+}
+
+function collectUsedFields() {
+  const set = new Set();
+  function walk(blocks) {
+    blocks.forEach(b => {
+      if (b.slotValues.field) set.add(b.slotValues.field);
+      if (b.slotValues.target) set.add(b.slotValues.target);
+      if (b.children) {
+        walk(b.children.then || []);
+        walk(b.children.else || []);
+      }
+    });
+  }
+  stacks.forEach(s => walk(s.blocks));
+  return [...set];
+}
+
+function collectFieldChoices(field) {
+  const set = new Set(FIELD_OPTIONS[field] || []);
+  function walk(blocks) {
+    blocks.forEach(b => {
+      if (b.slotValues.field === field && (b.defId === 'cond.if_eq' || b.defId === 'cond.if_neq' || b.defId === 'cond.if_else')) {
+        if (b.slotValues.value) set.add(String(b.slotValues.value));
+      }
+      if (b.children) { walk(b.children.then || []); walk(b.children.else || []); }
+    });
+  }
+  stacks.forEach(s => walk(s.blocks));
+  return [...set];
+}
+
+document.getElementById('btnTest').addEventListener('click', () => openTestPanel());
+document.getElementById('btnCloseTest').addEventListener('click', () => {
+  document.getElementById('testPanel').classList.remove('open');
+});
+
+function openTestPanel() {
+  const used = collectUsedFields();
+  const body = document.getElementById('testBody');
+  const panel = document.getElementById('testPanel');
+
+  if (used.length === 0) {
+    body.innerHTML = `<div class="test-empty">No fields referenced yet. Build some rules first.</div>`;
+    panel.classList.add('open');
+    return;
+  }
+
+  let html = '<div style="font-size:11px; color:var(--ink-3); margin-bottom:14px; line-height:1.5;">Enter values to see your rules fire in real time. Each change re-evaluates all stacks.</div>';
+  used.forEach(f => {
+    const choices = collectFieldChoices(f);
+    let ctrl;
+    if (choices.length > 0) {
+      const opts = ['<option value="">— choose —</option>']
+        .concat(choices.map(c => `<option value="${escapeAttr(c)}">${escapeText(c)}</option>`))
+        .join('');
+      ctrl = `<select class="test-input" data-test-field="${f}">${opts}</select>`;
+    } else {
+      ctrl = `<input class="test-input" data-test-field="${f}" placeholder="—" autocomplete="off">`;
+    }
+    html += `<div class="test-field" data-field="${f}"><label class="test-label">${f}</label>${ctrl}</div>`;
+  });
+  html += `
+    <div id="formErrorBox"></div>
+    <div class="test-log">
+      <div class="test-log-title"><span>Activity log</span><span class="log-count" id="logCount">0</span></div>
+      <div id="logEntries"></div>
+    </div>
+  `;
+  body.innerHTML = html;
+
+  body.querySelectorAll('.test-input').forEach(el => {
+    const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(ev, () => updateTest());
+  });
+
+  panel.classList.add('open');
+  updateTest();
+}
+
+function updateTest() {
+  const values = {};
+  document.querySelectorAll('[data-test-field]').forEach(i => values[i.dataset.testField] = i.value);
+  const { fieldState, logs } = runStacks(values);
+
+  document.querySelectorAll('.test-field').forEach(fieldEl => {
+    const f = fieldEl.dataset.field;
+    const fs = fieldState[f];
+    const label = fieldEl.querySelector('.test-label');
+    const input = fieldEl.querySelector('.test-input');
+    fieldEl.classList.remove('hidden');
+    label.classList.remove('required');
+    input.classList.remove('required-field');
+    if (fs) {
+      if (fs.hidden) fieldEl.classList.add('hidden');
+      if (fs.required) { label.classList.add('required'); input.classList.add('required-field'); }
+      if (input.tagName !== 'SELECT') {
+        input.placeholder = (fs.default && !input.value) ? `default: ${fs.default}` : '—';
+      }
+    } else if (input.tagName !== 'SELECT') {
+      input.placeholder = '—';
+    }
+  });
+
+  const errBox = document.getElementById('formErrorBox');
+  errBox.innerHTML = '';
+  const fs = fieldState['__form__'];
+  if (fs) {
+    if (fs.error) errBox.innerHTML += `<div class="test-error"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.01"/></svg>${fs.error}</div>`;
+    if (fs.confirm) errBox.innerHTML += `<div class="test-confirm"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5a2 2 0 012-2h6a2 2 0 012 2v4a2 2 0 01-2 2H7l-4 3v-3a2 2 0 010-4z"/></svg><div><strong style="font-weight:500;">Confirmation:</strong> ${fs.confirm}</div></div>`;
+  }
+
+  const logEl = document.getElementById('logEntries');
+  const countEl = document.getElementById('logCount');
+  const flat = [];
+  logs.forEach(stackLog => stackLog.forEach(entry => flat.push(entry)));
+
+  if (flat.length === 0) {
+    logEl.innerHTML = `<div style="font-size:11px; color:var(--ink-4); padding:8px; text-align:center;">No rules fired yet — enter values above.</div>`;
+    countEl.textContent = '0';
+  } else {
+    logEl.innerHTML = flat.map(l => {
+      switch (l.type) {
+        case 'trigger': return `<div class="log-entry trigger"><span class="log-step">▶</span><span>${l.text}</span></div>`;
+        case 'cond-pass': return `<div class="log-entry cond-pass"><span class="log-step" style="color:var(--action-dark);">✓</span><span>${l.text}</span></div>`;
+        case 'cond-fail': return `<div class="log-entry cond-fail"><span class="log-step" style="color:var(--value-bg);">✗</span><span>${l.text}</span></div>`;
+        case 'branch': return `<div class="log-entry" style="background:var(--cond-light); border-left-color:var(--cond-bg); color:var(--cond-text);"><span class="log-step">↳</span><span>${l.text}</span></div>`;
+        case 'branch-skipped': return `<div class="log-entry" style="border-left-color:var(--ink-4); color:var(--ink-3); font-style:italic;"><span class="log-step">·</span><span>${l.text}</span></div>`;
+        case 'fired': return `<div class="log-entry fired"><span class="log-step">→</span><span>${l.text}</span></div>`;
+        case 'skipped': return `<div class="log-entry skipped"><span class="log-step">—</span><span>${l.text}</span></div>`;
+      }
+      return '';
+    }).join('');
+    countEl.textContent = flat.filter(l => l.type !== 'trigger').length;
+  }
+}
+
+function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+function escapeText(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+</script>
+</body>
+</html>
